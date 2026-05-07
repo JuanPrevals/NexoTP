@@ -2,8 +2,6 @@
 
 Plataforma web en Flask para conectar egresados TP con empresas que publican ofertas laborales.
 
-![Vista home referencial](screenshots/home-referencial.svg)
-
 ## Caracteristicas
 - Registro e inicio de sesion para usuarios.
 - Registro e inicio de sesion para empresas.
