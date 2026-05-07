@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Crear perfil · {{ app_name }}{% endblock %}
+{% block content %}
+<section class="auth">
+  <div class="card">
+    <p class="eyebrow">Perfil TP</p>
+    <h1>Crear cuenta</h1>
+    <p class="muted">Minimal, persistente y orientado al primer empleo.</p>
+  </div>
+  <form class="form-card" method="post">
+    <div class="grid-2">
+      <div class="field"><label>Nombre</label><input name="nombre" required></div>
+      <div class="field"><label>Apellido</label><input name="apellido" required></div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Correo</label><input name="email" type="email" required></div>
+      <div class="field"><label>Contrasena</label><input name="password" type="password" minlength="6" required></div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Especialidad</label><select name="especialidad" required><option value="">Selecciona</option>{% for i in especialidades %}<option>{{ i }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Comuna</label><select name="comuna" required><option value="">Selecciona</option>{% for i in comunas %}<option>{{ i }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Telefono</label><input name="telefono"></div>
+      <div class="field"><label>Pais</label><input name="pais" value="Chile"></div>
+    </div>
+    <div class="field"><label>Habilidades</label><input name="habilidades" placeholder="HTML, Excel, inventario"></div>
+    <div class="field"><label>Sobre mi</label><textarea name="sobre_mi"></textarea></div>
+    <button class="btn btn-primary btn-wide">Crear perfil</button>
+  </form>
+</section>
+{% endblock %}

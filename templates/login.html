@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Ingresar · {{ app_name }}{% endblock %}
+{% block content %}
+<section class="auth">
+  <div class="card">
+    <p class="eyebrow">Egresados</p>
+    <h1>Entrar</h1>
+    <p class="muted">Demo: demo@nexotp.cl / demo123</p>
+    <a class="btn btn-secondary" href="{{ url_for('empresa_login') }}">Entrar como empresa</a>
+  </div>
+  <form class="form-card" method="post">
+    <div class="field"><label>Correo</label><input name="email" type="email" required></div>
+    <div class="field"><label>Contrasena</label><input name="password" type="password" required></div>
+    <button class="btn btn-primary btn-wide">Ingresar</button>
+    <a class="btn btn-secondary btn-wide" href="{{ url_for('registro') }}">Crear perfil</a>
+  </form>
+</section>
+{% endblock %}

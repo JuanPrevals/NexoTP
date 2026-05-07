@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Feed · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="row between">
+    <div>
+      <p class="eyebrow">Feed</p>
+      <h1>Oportunidades y novedades</h1>
+    </div>
+    <a class="btn btn-secondary" href="{{ url_for('red') }}">Ver red</a>
+  </div>
+
+  <div class="app-grid">
+    <aside class="form-card sticky">
+      <h2>Filtros</h2>
+      <form class="form-card flat" method="get">
+        <div class="field"><label>Buscar</label><input name="q" value="{{ filtros.q }}" placeholder="cargo o habilidad"></div>
+        <div class="field">
+          <label>Especialidad</label>
+          <select name="especialidad">
+            <option value="">Todas</option>
+            {% for item in especialidades %}<option value="{{ item }}" {% if filtros.especialidad == item %}selected{% endif %}>{{ item }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Modalidad</label>
+          <select name="modalidad">
+            <option value="">Todas</option>
+            {% for item in modalidades %}<option value="{{ item }}" {% if filtros.modalidad == item %}selected{% endif %}>{{ item }}</option>{% endfor %}
+          </select>
+        </div>
+        <button class="btn btn-primary btn-wide">Filtrar</button>
+        <a class="btn btn-secondary btn-wide" href="{{ url_for('feed') }}">Limpiar</a>
+      </form>
+    </aside>
+
+    <section class="stack">
+      {% for oferta in ofertas %}
+        <article class="job-card">
+          <div class="job-top">
+            <div class="logo" style="--logo: {{ oferta.empresa.color }}">{{ oferta.empresa.logo_inicial }}</div>
+            <div>
+              <div class="row between">
+                <strong>{{ oferta.empresa.nombre }}</strong>
+                <span class="muted mini">{{ oferta.fecha_publicacion.strftime('%d-%m-%Y') }}</span>
+              </div>
+              <h2>{{ oferta.titulo }}</h2>
+              <p class="muted">{{ oferta.descripcion }}</p>
+            </div>
+          </div>
+          <div class="chips">
+            <span class="chip chip-accent">{{ oferta.especialidad_req }}</span>
+            <span class="chip">{{ oferta.modalidad }}</span>
+            <span class="chip">{{ oferta.jornada }}</span>
+            <span class="chip">{{ oferta.comuna }}</span>
+          </div>
+          <div class="card-actions">
+            <span class="muted mini">{{ oferta.sueldo or "Renta a convenir" }}</span>
+            {% if oferta.id in mis_postulaciones %}
+              <button class="btn btn-secondary" disabled>Postulado</button>
+            {% else %}
+              <button class="btn btn-primary" data-apply="{{ oferta.id }}">Postular</button>
+            {% endif %}
+          </div>
+        </article>
+      {% else %}
+        <div class="empty-state"><h2>Sin resultados</h2><p class="muted">Cambia los filtros.</p></div>
+      {% endfor %}
+    </section>
+
+    <aside class="stack sticky">
+      <div class="card">
+        <h2>Novedades</h2>
+        <div class="timeline">
+          {% for novedad in novedades %}
+            <div class="feed-card flat">
+              <strong>{{ novedad.titulo }}</strong>
+              <p class="muted mini">{{ novedad.detalle }}</p>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

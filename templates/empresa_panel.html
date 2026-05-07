@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Panel empresa · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="row between">
+    <div><p class="eyebrow">Panel empresa</p><h1>{{ empresa.nombre }}</h1></div>
+    <a class="btn btn-primary" href="{{ url_for('nueva_oferta') }}">Nueva oferta</a>
+  </div>
+
+  <form class="form-card" method="get" action="{{ url_for('empresa_panel') }}">
+    <h2>Filtrar postulaciones</h2>
+    <div class="grid-2">
+      <div class="field">
+        <label>Estado</label>
+        <select name="estado">
+          <option value="">Todos</option>
+          <option value="En revision" {% if filtros.estado == "En revision" %}selected{% endif %}>En revision</option>
+          <option value="Aceptado" {% if filtros.estado == "Aceptado" %}selected{% endif %}>Aceptado</option>
+          <option value="Rechazado" {% if filtros.estado == "Rechazado" %}selected{% endif %}>Rechazado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Oferta</label>
+        <select name="oferta_id">
+          <option value="">Todas</option>
+          {% for oferta in ofertas %}
+            <option value="{{ oferta.id }}" {% if filtros.oferta_id == (oferta.id|string) %}selected{% endif %}>{{ oferta.titulo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Modalidad</label>
+        <select name="modalidad">
+          <option value="">Todas</option>
+          <option value="Presencial" {% if filtros.modalidad == "Presencial" %}selected{% endif %}>Presencial</option>
+          <option value="Hibrida" {% if filtros.modalidad == "Hibrida" %}selected{% endif %}>Hibrida</option>
+          <option value="Remota" {% if filtros.modalidad == "Remota" %}selected{% endif %}>Remota</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Jornada</label>
+        <select name="jornada">
+          <option value="">Todas</option>
+          <option value="Full-time" {% if filtros.jornada == "Full-time" %}selected{% endif %}>Full-time</option>
+          <option value="Part-time" {% if filtros.jornada == "Part-time" %}selected{% endif %}>Part-time</option>
+          <option value="Flexible" {% if filtros.jornada == "Flexible" %}selected{% endif %}>Flexible</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Especialidad</label>
+        <input name="especialidad" value="{{ filtros.especialidad }}" placeholder="Ej: Desarrollo Web" />
+      </div>
+      <div class="field">
+        <label>Nombre, correo u oferta</label>
+        <input name="q" value="{{ filtros.q }}" placeholder="Buscar..." />
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Fecha desde</label>
+        <input type="date" name="fecha_desde" value="{{ filtros.fecha_desde }}" />
+      </div>
+      <div class="field">
+        <label>Fecha hasta</label>
+        <input type="date" name="fecha_hasta" value="{{ filtros.fecha_hasta }}" />
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn btn-primary" type="submit">Aplicar filtros</button>
+      <a class="btn btn-secondary" href="{{ url_for('empresa_panel') }}">Limpiar</a>
+    </div>
+  </form>
+
+  <section class="stack">
+    {% for p in postulaciones %}
+      <article class="job-card">
+        <div class="row between">
+          <div>
+            <h2>{{ p.oferta.titulo }}</h2>
+            <p class="muted">{{ p.usuario.nombre_completo }} · {{ p.usuario.email }}</p>
+          </div>
+          <span class="chip">{{ p.estado }}</span>
+        </div>
+        <div class="chips"><span class="chip">{{ p.oferta.especialidad_req }}</span><span class="chip">{{ p.oferta.modalidad }}</span><span class="chip">{{ p.oferta.jornada }}</span></div>
+        <details class="feed-card flat">
+          <summary>Ver detalle de postulacion</summary>
+          <div class="grid-2" style="margin-top:1rem;">
+            <div>
+              <h3>Datos personales</h3>
+              <p class="muted">Telefono: {{ p.usuario.telefono or "No informado" }}</p>
+              <p class="muted">Correo: {{ p.usuario.email }}</p>
+              <p class="muted">Ciudad/Pais: {{ p.usuario.comuna }}, {{ p.usuario.pais }}</p>
+              <p class="muted">LinkedIn: {{ p.usuario.linkedin or "No informado" }}</p>
+              <p class="muted">Portafolio: {{ p.usuario.portafolio or "No informado" }}</p>
+            </div>
+            <div>
+              <h3>Perfil</h3>
+              <p class="muted">{{ p.usuario.perfil_profesional or p.usuario.sobre_mi or "Sin resumen." }}</p>
+              <p class="muted"><strong>Objetivo:</strong> {{ p.usuario.objetivo_profesional or "No informado" }}</p>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div>
+              <h3>Formacion</h3>
+              <p class="muted">{{ p.usuario.carrera_titulo or p.usuario.especialidad }}</p>
+              <p class="muted">{{ p.usuario.institucion or p.usuario.liceo }} · {{ p.usuario.anio_ingreso or "" }} - {{ p.usuario.anio_egreso or "" }}</p>
+              <p class="muted">{{ p.usuario.certificaciones or "Sin certificaciones informadas." }}</p>
+            </div>
+            <div>
+              <h3>Habilidades</h3>
+              <p class="muted"><strong>Tecnicas:</strong> {{ p.usuario.habilidades_tecnicas or p.usuario.habilidades or "No informado" }}</p>
+              <p class="muted"><strong>Blandas:</strong> {{ p.usuario.habilidades_blandas or "No informado" }}</p>
+              <p class="muted"><strong>Idiomas:</strong> {{ p.usuario.idiomas or "No informado" }}</p>
+            </div>
+          </div>
+          <h3>Experiencia y proyectos</h3>
+          <p class="muted">{{ p.usuario.experiencia_laboral or "Sin experiencia laboral formal informada." }}</p>
+          <p class="muted">{{ p.usuario.proyectos or "Sin proyectos informados." }}</p>
+          <h3>Resolver postulacion</h3>
+          <form class="form-card flat" method="post" action="{{ url_for('cambiar_estado_postulacion', postulacion_id=p.id) }}">
+            <div class="field"><label>Motivo / comentario para el usuario</label><textarea name="motivo_empresa" placeholder="Ej: Cumple con el perfil, contactaremos por correo.">{{ p.motivo_empresa or "" }}</textarea></div>
+            <div class="row">
+              <button class="btn btn-accent" name="accion" value="aceptar">Aceptar</button>
+              <button class="btn btn-secondary" name="accion" value="rechazar">Rechazar</button>
+            </div>
+          </form>
+        </details>
+      </article>
+    {% else %}
+      <div class="empty-state"><h2>No hay postulaciones que coincidan con el filtro.</h2></div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

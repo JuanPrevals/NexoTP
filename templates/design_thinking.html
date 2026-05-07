@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Proyecto Design Thinking · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <section class="section">
+    <span class="eyebrow">Bitacora Design Thinking</span>
+    <h1>Brecha de empleo juvenil TP en Chile.</h1>
+    <p class="lead">
+      {{ app_name }} transforma la investigacion del problema en un prototipo funcional:
+      una plataforma de insercion laboral para egresados tecnico-profesionales de la Region Metropolitana.
+    </p>
+  </section>
+
+  <section class="dt-grid">
+    <article class="dt-card">
+      <strong>Problema</strong>
+      <p class="muted">Jovenes TP egresan con competencias tecnicas, pero las ofertas iniciales piden experiencia que aun no pueden tener.</p>
+    </article>
+    <article class="dt-card">
+      <strong>Contexto</strong>
+      <p class="muted">Sector sur de Santiago: San Ramon, La Pintana, El Bosque, La Granja y comunas cercanas.</p>
+    </article>
+    <article class="dt-card">
+      <strong>Causas</strong>
+      <p class="muted">Falta de experiencia acreditada, desconexion curricular-empresa y requisitos excluyentes en portales tradicionales.</p>
+    </article>
+    <article class="dt-card">
+      <strong>Consecuencias</strong>
+      <p class="muted">Desempleo juvenil, subempleo fuera de la especialidad, perdida de habilidades y presion economica familiar.</p>
+    </article>
+    <article class="dt-card">
+      <strong>Usuario</strong>
+      <p class="muted">Egresados de 17 a 19 anos de Contabilidad, RRHH, Logistica, Programacion y Administracion.</p>
+    </article>
+    <article class="dt-card">
+      <strong>Propuesta</strong>
+      <p class="muted">Perfil profesional TP, feed de vacantes sin experiencia previa, empresas con mentoria y postulacion simple.</p>
+    </article>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Etapas</span>
+        <h2>Del problema al prototipo.</h2>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="dt-card"><strong>Empatizar</strong><p class="muted">Entrevistas a egresados recientes y agrupacion de barreras comunes.</p></div>
+      <div class="dt-card"><strong>Definir</strong><p class="muted">El usuario necesita demostrar competencias tecnicas sin historial laboral formal.</p></div>
+      <div class="dt-card"><strong>Idear</strong><p class="muted">Una red laboral especializada, mas simple y confiable que portales generales.</p></div>
+      <div class="dt-card"><strong>Prototipar</strong><p class="muted">Aplicacion Flask con perfiles, empresas, ofertas, filtros y postulaciones.</p></div>
+      <div class="dt-card"><strong>Evaluar</strong><p class="muted">Medir registros, postulaciones, matches por especialidad y contacto empresa-egresado.</p></div>
+      <div class="dt-card"><strong>Mejorar</strong><p class="muted">Agregar panel para empresas, evidencias de proyectos y validacion del liceo.</p></div>
+    </div>
+  </section>
+</div>
+{% endblock %}

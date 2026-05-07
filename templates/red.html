@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Red · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="row between">
+    <div><p class="eyebrow">Red social</p><h1>Colegas TP</h1></div>
+    <a class="btn btn-secondary" href="{{ url_for('feed') }}">Volver al feed</a>
+  </div>
+  <section class="grid-3">
+    {% for usuario in usuarios %}
+      <article class="card">
+        <div class="profile-head">
+          <div class="avatar">{{ usuario.iniciales }}</div>
+          <div><h2>{{ usuario.nombre_completo }}</h2><p class="muted mini">{{ usuario.especialidad }} · {{ usuario.comuna }}</p></div>
+        </div>
+        <p class="muted">{{ usuario.sobre_mi or "Sin descripcion." }}</p>
+        {% if usuario.id in conectados %}
+          <button class="btn btn-secondary btn-wide" disabled>Colega</button>
+        {% else %}
+          <form method="post" action="{{ url_for('conectar', usuario_id=usuario.id) }}">
+            <button class="btn btn-primary btn-wide">Agregar colega</button>
+          </form>
+        {% endif %}
+      </article>
+    {% else %}
+      <div class="empty-state"><h2>No hay otros perfiles.</h2></div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

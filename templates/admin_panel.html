@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Panel admin · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="row between">
+    <div><p class="eyebrow">Admin</p><h1>Supervision general</h1></div>
+    <a class="btn btn-secondary" href="{{ url_for('logout') }}">Salir</a>
+  </div>
+
+  <section class="grid-3">
+    <div class="stat"><strong>{{ usuarios|length }}</strong><span class="muted">usuarios</span></div>
+    <div class="stat"><strong>{{ empresas|length }}</strong><span class="muted">empresas</span></div>
+    <div class="stat"><strong>{{ ofertas|length }}</strong><span class="muted">ofertas</span></div>
+  </section>
+
+  <section class="stack section">
+    <div class="card">
+      <h2>Usuarios</h2>
+      <div class="stack">
+        {% for u in usuarios %}
+          <div class="feed-card flat row between">
+            <span><strong>{{ u.nombre_completo }}</strong> · {{ u.email }} · {{ u.especialidad }}</span>
+            <span class="row">
+              <a class="btn btn-secondary" href="{{ url_for('admin_editar_usuario', usuario_id=u.id) }}">Editar</a>
+              <form method="post" action="{{ url_for('admin_eliminar', tipo='usuario', item_id=u.id) }}" onsubmit="return confirm('Eliminar usuario y sus postulaciones?')"><button class="btn btn-secondary">Eliminar</button></form>
+            </span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Empresas</h2>
+      <div class="stack">
+        {% for e in empresas %}
+          <div class="feed-card flat row between">
+            <span><strong>{{ e.nombre }}</strong> · {{ e.email }} · {{ e.ofertas|length }} ofertas</span>
+            <span class="row">
+              <a class="btn btn-secondary" href="{{ url_for('admin_editar_empresa', empresa_id=e.id) }}">Editar</a>
+              <form method="post" action="{{ url_for('admin_eliminar', tipo='empresa', item_id=e.id) }}" onsubmit="return confirm('Eliminar empresa, ofertas y postulaciones asociadas?')"><button class="btn btn-secondary">Eliminar</button></form>
+            </span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Ofertas</h2>
+      <div class="stack">
+        {% for o in ofertas %}
+          <div class="feed-card flat row between">
+            <span><strong>{{ o.titulo }}</strong> · {{ o.empresa.nombre }} · {{ o.postulaciones|length }} postulantes · {% if o.activa %}Activa{% else %}Oculta{% endif %}</span>
+            <span class="row">
+              <a class="btn btn-secondary" href="{{ url_for('admin_editar_oferta', oferta_id=o.id) }}">Editar</a>
+              <form method="post" action="{{ url_for('admin_eliminar', tipo='oferta', item_id=o.id) }}" onsubmit="return confirm('Eliminar oferta y postulaciones?')"><button class="btn btn-secondary">Eliminar</button></form>
+            </span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Postulaciones</h2>
+      <div class="stack">
+        {% for p in postulaciones %}
+          <div class="feed-card flat row between">
+            <span><strong>{{ p.usuario.nombre_completo }}</strong> a {{ p.oferta.titulo }} · {{ p.estado }}</span>
+            <span class="row">
+              <a class="btn btn-secondary" href="{{ url_for('admin_editar_postulacion', postulacion_id=p.id) }}">Editar</a>
+              <form method="post" action="{{ url_for('admin_eliminar', tipo='postulacion', item_id=p.id) }}" onsubmit="return confirm('Eliminar postulacion?')"><button class="btn btn-secondary">Eliminar</button></form>
+            </span>
+          </div>
+        {% else %}
+          <p class="muted">Sin postulaciones.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Novedades recientes</h2>
+      <div class="stack">
+        {% for n in novedades %}
+          <div class="feed-card flat row between">
+            <span><strong>{{ n.titulo }}</strong> · {{ n.detalle }}</span>
+            <form method="post" action="{{ url_for('admin_eliminar', tipo='novedad', item_id=n.id) }}"><button class="btn btn-secondary">Eliminar</button></form>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

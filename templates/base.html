@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('index') }}"><span>N</span>{{ app_name }}</a>
+    <nav class="nav-links">
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('feed') }}">Feed</a>
+        <a href="{{ url_for('postulado') }}">Postulado</a>
+        <a href="{{ url_for('red') }}">Red</a>
+        <a href="{{ url_for('empresas') }}">Empresas</a>
+        <a href="{{ url_for('perfil') }}">Perfil</a>
+      {% elif empresa_actual %}
+        <a href="{{ url_for('empresa_panel') }}">Panel</a>
+        <a href="{{ url_for('nueva_oferta') }}">Publicar</a>
+      {% else %}
+        <a href="{{ url_for('faq') }}">FAQ</a>
+        <a href="{{ url_for('empresa_login') }}">Empresas</a>
+        <a href="{{ url_for('login') }}">Ingresar</a>
+      {% endif %}
+    </nav>
+    <div class="topbar-actions">
+      <button class="icon-btn" type="button" data-theme-toggle title="Cambiar tema">◐</button>
+      {% if current_user.is_authenticated or empresa_actual %}
+        <a class="btn btn-secondary" href="{{ url_for('logout') }}">Salir</a>
+      {% else %}
+        <a class="btn btn-primary" href="{{ url_for('registro') }}">Crear perfil</a>
+      {% endif %}
+    </div>
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-stack">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <main>{% block content %}{% endblock %}</main>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

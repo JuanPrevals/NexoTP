@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Registrar empresa · {{ app_name }}{% endblock %}
+{% block content %}
+<section class="auth">
+  <div class="card"><p class="eyebrow">Empresa</p><h1>Crear cuenta</h1><p class="muted">Las ofertas publicadas quedan visibles para todos los egresados.</p></div>
+  <form class="form-card" method="post">
+    <div class="grid-2">
+      <div class="field"><label>Nombre</label><input name="nombre" required></div>
+      <div class="field"><label>Rubro</label><input name="rubro" required></div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Correo</label><input name="email" type="email" required></div>
+      <div class="field"><label>Contrasena</label><input name="password" type="password" minlength="6" required></div>
+    </div>
+    <div class="field"><label>Ubicacion</label><input name="ubicacion" required></div>
+    <div class="field"><label>Contacto</label><input name="contacto"></div>
+    <div class="field"><label>Web</label><input name="web"></div>
+    <div class="field"><label>Descripcion</label><textarea name="descripcion" required></textarea></div>
+    <button class="btn btn-primary btn-wide">Crear empresa</button>
+  </form>
+</section>
+{% endblock %}

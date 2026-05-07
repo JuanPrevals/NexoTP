@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Admin · {{ app_name }}{% endblock %}
+{% block content %}
+<section class="auth">
+  <div class="card">
+    <p class="eyebrow">Acceso interno</p>
+    <h1>Admin</h1>
+    <p class="muted">Ruta oculta para supervision general.</p>
+  </div>
+  <form class="form-card" method="post">
+    <div class="field"><label>Clave admin</label><input name="password" type="password" required autofocus></div>
+    <button class="btn btn-primary btn-wide">Entrar</button>
+  </form>
+</section>
+{% endblock %}

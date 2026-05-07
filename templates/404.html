@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Pagina no encontrada · {{ app_name }}{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="empty-state">
+    <span class="eyebrow">404</span>
+    <h1>Esta pagina no existe.</h1>
+    <p class="lead">Vuelve al inicio o revisa las oportunidades disponibles.</p>
+    <div class="inline-actions" style="justify-content:center; gap:.8rem; flex-wrap:wrap;">
+      <a class="btn btn-primary" href="{{ url_for('index') }}">Ir al inicio</a>
+      {% if current_user.is_authenticated %}
+        <a class="btn btn-light" href="{{ url_for('feed') }}">Ver oportunidades</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

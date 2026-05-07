@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}FAQ · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page" style="max-width:820px;">
+  <p class="eyebrow">FAQ</p>
+  <h1>Preguntas frecuentes</h1>
+  <div class="stack">
+    <details open><summary>Que es {{ app_name }}?</summary><p class="muted">Una red laboral simple para egresados tecnico-profesionales y empresas.</p></details>
+    <details><summary>Las ofertas quedan guardadas?</summary><p class="muted">Si. Se almacenan en SQLite. Al refrescar la pagina siguen disponibles.</p></details>
+    <details><summary>Hay cuentas de empresa?</summary><p class="muted">Si. Una empresa puede registrarse, entrar al panel y publicar ofertas.</p></details>
+    <details><summary>Hay red social?</summary><p class="muted">Si. Los usuarios pueden agregar colegas y ver novedades del sistema.</p></details>
+  </div>
+</div>
+{% endblock %}

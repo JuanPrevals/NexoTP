@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Empresas · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="row between">
+    <div><p class="eyebrow">Empresas</p><h1>Organizaciones activas</h1></div>
+    <a class="btn btn-secondary" href="{{ url_for('empresa_login') }}">Acceso empresa</a>
+  </div>
+  <section class="companies-grid">
+    {% for empresa in empresas %}
+      <article class="company-card">
+        <div class="row">
+          <div class="logo" style="--logo: {{ empresa.color }}">{{ empresa.logo_inicial }}</div>
+          <div><h2>{{ empresa.nombre }}</h2><p class="muted mini">{{ empresa.rubro }} · {{ empresa.ubicacion }}</p></div>
+        </div>
+        <p class="muted">{{ empresa.descripcion }}</p>
+        <span class="chip">{{ empresa.ofertas|length }} ofertas</span>
+      </article>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

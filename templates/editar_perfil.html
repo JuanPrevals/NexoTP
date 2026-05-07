@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Editar CV · {{ app_name }}{% endblock %}
+{% block content %}
+<section class="page">
+  <form class="form-card" method="post" style="max-width:920px;margin:0 auto;">
+    <div class="row between">
+      <div><p class="eyebrow">CV profesional</p><h1>Editar perfil</h1></div>
+      <a class="btn btn-secondary" href="{{ url_for('perfil') }}">Cancelar</a>
+    </div>
+
+    <h2>Datos personales</h2>
+    <div class="grid-2">
+      <div class="field"><label>Nombre</label><input name="nombre" value="{{ current_user.nombre }}" required></div>
+      <div class="field"><label>Apellido</label><input name="apellido" value="{{ current_user.apellido }}" required></div>
+      <div class="field"><label>Telefono</label><input name="telefono" value="{{ current_user.telefono or '' }}"></div>
+      <div class="field"><label>Correo</label><input value="{{ current_user.email }}" disabled></div>
+      <div class="field"><label>Ciudad</label><input name="comuna" value="{{ current_user.comuna }}"></div>
+      <div class="field"><label>Pais</label><input name="pais" value="{{ current_user.pais or 'Chile' }}"></div>
+      <div class="field"><label>LinkedIn</label><input name="linkedin" value="{{ current_user.linkedin or '' }}"></div>
+      <div class="field"><label>Portafolio</label><input name="portafolio" value="{{ current_user.portafolio or '' }}"></div>
+      <div class="field"><label>Foto URL opcional</label><input name="foto_url" value="{{ current_user.foto_url or '' }}"></div>
+      <div class="field"><label>Fecha nacimiento opcional</label><input name="fecha_nacimiento" value="{{ current_user.fecha_nacimiento or '' }}" placeholder="DD-MM-AAAA"></div>
+    </div>
+
+    <h2>Perfil profesional</h2>
+    <div class="field"><label>Resumen</label><textarea name="perfil_profesional">{{ current_user.perfil_profesional or '' }}</textarea></div>
+    <div class="grid-2">
+      <div class="field"><label>Experiencia</label><textarea name="experiencia_resumen">{{ current_user.experiencia_resumen or '' }}</textarea></div>
+      <div class="field"><label>Objetivos profesionales</label><textarea name="objetivo_profesional">{{ current_user.objetivo_profesional or '' }}</textarea></div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Especialidad</label><select name="especialidad">{% for i in especialidades %}<option value="{{ i }}" {% if current_user.especialidad == i %}selected{% endif %}>{{ i }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Liceo / institucion base</label><input name="liceo" value="{{ current_user.liceo or '' }}"></div>
+    </div>
+    <div class="field"><label>Sobre mi breve</label><textarea name="sobre_mi">{{ current_user.sobre_mi or '' }}</textarea></div>
+
+    <h2>Formacion academica</h2>
+    <div class="grid-2">
+      <div class="field"><label>Carrera o titulo</label><input name="carrera_titulo" value="{{ current_user.carrera_titulo or '' }}"></div>
+      <div class="field"><label>Institucion</label><input name="institucion" value="{{ current_user.institucion or '' }}"></div>
+      <div class="field"><label>Ano ingreso</label><input name="anio_ingreso" value="{{ current_user.anio_ingreso or '' }}"></div>
+      <div class="field"><label>Ano egreso</label><input name="anio_egreso" value="{{ current_user.anio_egreso or '' }}"></div>
+    </div>
+    <div class="field"><label>Certificaciones</label><textarea name="certificaciones">{{ current_user.certificaciones or '' }}</textarea></div>
+    <div class="field"><label>Cursos relevantes / diplomados</label><textarea name="cursos_relevantes">{{ current_user.cursos_relevantes or '' }}</textarea></div>
+
+    <h2>Experiencia laboral</h2>
+    <div class="field"><label>Cargos, empresas, fechas, funciones, logros y tecnologias</label><textarea name="experiencia_laboral">{{ current_user.experiencia_laboral or '' }}</textarea></div>
+
+    <h2>Habilidades</h2>
+    <div class="grid-2">
+      <div class="field"><label>Tecnicas</label><textarea name="habilidades_tecnicas">{{ current_user.habilidades_tecnicas or current_user.habilidades or '' }}</textarea></div>
+      <div class="field"><label>Blandas</label><textarea name="habilidades_blandas">{{ current_user.habilidades_blandas or '' }}</textarea></div>
+      <div class="field"><label>Idiomas</label><textarea name="idiomas">{{ current_user.idiomas or '' }}</textarea></div>
+      <div class="field"><label>Herramientas</label><textarea name="herramientas">{{ current_user.herramientas or '' }}</textarea></div>
+    </div>
+    <input type="hidden" name="habilidades" value="{{ current_user.habilidades or '' }}">
+
+    <h2>Proyectos y referencias</h2>
+    <div class="field"><label>Proyectos</label><textarea name="proyectos">{{ current_user.proyectos or '' }}</textarea></div>
+    <div class="field"><label>Referencias</label><textarea name="referencias">{{ current_user.referencias or 'Referencias disponibles a solicitud.' }}</textarea></div>
+
+    <div class="grid-2">
+      <div class="field"><label>Jornada</label><select name="disponibilidad">{% for i in jornadas %}<option value="{{ i }}" {% if current_user.disponibilidad == i %}selected{% endif %}>{{ i }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Modalidad</label><select name="modalidad_preferida">{% for i in modalidades %}<option value="{{ i }}" {% if current_user.modalidad_preferida == i %}selected{% endif %}>{{ i }}</option>{% endfor %}</select></div>
+    </div>
+    <button class="btn btn-primary btn-wide">Guardar CV</button>
+  </form>
+</section>
+{% endblock %}

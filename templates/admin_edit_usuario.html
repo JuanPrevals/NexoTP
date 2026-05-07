@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Editar usuario · Admin{% endblock %}
+{% block content %}
+<section class="page">
+  <form class="form-card" method="post" style="max-width:900px;margin:0 auto;">
+    <div class="row between"><div><p class="eyebrow">Admin</p><h1>Editar usuario</h1></div><a class="btn btn-secondary" href="{{ url_for('admin_panel') }}">Volver</a></div>
+    <div class="grid-2">
+      <div class="field"><label>Nombre</label><input name="nombre" value="{{ usuario.nombre }}" required></div>
+      <div class="field"><label>Apellido</label><input name="apellido" value="{{ usuario.apellido }}" required></div>
+      <div class="field"><label>Email</label><input name="email" type="email" value="{{ usuario.email }}" required></div>
+      <div class="field"><label>Nueva clave opcional</label><input name="password" type="password"></div>
+      <div class="field"><label>Telefono</label><input name="telefono" value="{{ usuario.telefono or '' }}"></div>
+      <div class="field"><label>Comuna</label><input name="comuna" value="{{ usuario.comuna or '' }}"></div>
+      <div class="field"><label>Pais</label><input name="pais" value="{{ usuario.pais or '' }}"></div>
+      <div class="field"><label>Especialidad</label><input name="especialidad" value="{{ usuario.especialidad or '' }}"></div>
+      <div class="field"><label>LinkedIn</label><input name="linkedin" value="{{ usuario.linkedin or '' }}"></div>
+      <div class="field"><label>Portafolio</label><input name="portafolio" value="{{ usuario.portafolio or '' }}"></div>
+    </div>
+    <div class="field"><label>Perfil profesional</label><textarea name="perfil_profesional">{{ usuario.perfil_profesional or '' }}</textarea></div>
+    <div class="grid-2">
+      <div class="field"><label>Habilidades tecnicas</label><textarea name="habilidades_tecnicas">{{ usuario.habilidades_tecnicas or '' }}</textarea></div>
+      <div class="field"><label>Habilidades blandas</label><textarea name="habilidades_blandas">{{ usuario.habilidades_blandas or '' }}</textarea></div>
+      <div class="field"><label>Idiomas</label><textarea name="idiomas">{{ usuario.idiomas or '' }}</textarea></div>
+      <div class="field"><label>Herramientas</label><textarea name="herramientas">{{ usuario.herramientas or '' }}</textarea></div>
+    </div>
+    <div class="field"><label>Certificaciones</label><textarea name="certificaciones">{{ usuario.certificaciones or '' }}</textarea></div>
+    <div class="field"><label>Experiencia laboral</label><textarea name="experiencia_laboral">{{ usuario.experiencia_laboral or '' }}</textarea></div>
+    <div class="field"><label>Proyectos</label><textarea name="proyectos">{{ usuario.proyectos or '' }}</textarea></div>
+    <div class="field"><label>Referencias</label><textarea name="referencias">{{ usuario.referencias or '' }}</textarea></div>
+    <button class="btn btn-primary btn-wide">Guardar usuario</button>
+  </form>
+</section>
+{% endblock %}

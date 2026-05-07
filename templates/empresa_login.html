@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Empresa · {{ app_name }}{% endblock %}
+{% block content %}
+<section class="auth">
+  <div class="card">
+    <p class="eyebrow">Empresas</p>
+    <h1>Publica empleos</h1>
+    <p class="muted">Demo: empresa@nexotp.cl / empresa123</p>
+  </div>
+  <form class="form-card" method="post">
+    <div class="field"><label>Correo empresa</label><input name="email" type="email" required></div>
+    <div class="field"><label>Contrasena</label><input name="password" type="password" required></div>
+    <button class="btn btn-primary btn-wide">Ingresar</button>
+    <a class="btn btn-secondary btn-wide" href="{{ url_for('empresa_registro') }}">Registrar empresa</a>
+  </form>
+</section>
+{% endblock %}

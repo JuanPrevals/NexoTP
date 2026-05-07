@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Editar oferta · Admin{% endblock %}
+{% block content %}
+<section class="page">
+  <form class="form-card" method="post" style="max-width:820px;margin:0 auto;">
+    <div class="row between"><div><p class="eyebrow">Admin</p><h1>Editar oferta</h1></div><a class="btn btn-secondary" href="{{ url_for('admin_panel') }}">Volver</a></div>
+    <p class="muted">{{ oferta.empresa.nombre }}</p>
+    <div class="field"><label>Titulo</label><input name="titulo" value="{{ oferta.titulo }}" required></div>
+    <div class="field"><label>Descripcion</label><textarea name="descripcion">{{ oferta.descripcion }}</textarea></div>
+    <div class="grid-2">
+      <div class="field"><label>Especialidad</label><input name="especialidad_req" value="{{ oferta.especialidad_req }}"></div>
+      <div class="field"><label>Comuna</label><input name="comuna" value="{{ oferta.comuna }}"></div>
+      <div class="field"><label>Modalidad</label><input name="modalidad" value="{{ oferta.modalidad }}"></div>
+      <div class="field"><label>Jornada</label><input name="jornada" value="{{ oferta.jornada }}"></div>
+      <div class="field"><label>Sueldo</label><input name="sueldo" value="{{ oferta.sueldo or '' }}"></div>
+      <div class="field"><label>Vacantes</label><input name="vacantes" type="number" min="1" value="{{ oferta.vacantes }}"></div>
+      <div class="field"><label>Estado</label><select name="activa"><option value="1" {% if oferta.activa %}selected{% endif %}>Activa</option><option value="0" {% if not oferta.activa %}selected{% endif %}>Oculta</option></select></div>
+    </div>
+    <div class="field"><label>Requisitos</label><textarea name="requisitos">{{ oferta.requisitos or '' }}</textarea></div>
+    <button class="btn btn-primary btn-wide">Guardar oferta</button>
+  </form>
+</section>
+{% endblock %}

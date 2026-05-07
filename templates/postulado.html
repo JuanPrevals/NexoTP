@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Postulado · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="row between">
+    <div><p class="eyebrow">Seguimiento</p><h1>Mis postulaciones</h1></div>
+    <a class="btn btn-secondary" href="{{ url_for('feed') }}">Buscar ofertas</a>
+  </div>
+  <section class="stack">
+    {% for p in postulaciones %}
+      <article class="job-card">
+        <div class="row between">
+          <div>
+            <h2>{{ p.oferta.titulo }}</h2>
+            <p class="muted">{{ p.oferta.empresa.nombre }} · {{ p.oferta.comuna }} · {{ p.fecha.strftime('%d-%m-%Y') }}</p>
+          </div>
+          <span class="chip chip-accent">{{ p.estado }}</span>
+        </div>
+        <p class="muted">{{ p.oferta.descripcion }}</p>
+        {% if p.motivo_empresa %}
+          <div class="feed-card flat">
+            <strong>Respuesta de la empresa</strong>
+            <p class="muted">{{ p.motivo_empresa }}</p>
+            {% if p.fecha_respuesta %}<p class="muted mini">{{ p.fecha_respuesta.strftime('%d-%m-%Y') }}</p>{% endif %}
+          </div>
+        {% endif %}
+      </article>
+    {% else %}
+      <div class="empty-state">
+        <h2>Aun no has postulado.</h2>
+        <p class="muted">Cuando postules, la oferta desaparece del feed y queda guardada aqui.</p>
+      </div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}
