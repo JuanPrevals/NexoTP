@@ -1,4 +1,4 @@
-# TalentazoTP (NexoTP)
+# NexoTP
 
 Plataforma web en Flask para conectar egresados TP con empresas que publican ofertas laborales.
 
@@ -23,7 +23,7 @@ Plataforma web en Flask para conectar egresados TP con empresas que publican ofe
 
 ## Estructura del proyecto
 ```text
-TalentazoTP/
+NexoTP/
   app.py
   requirements.txt
   templates/
