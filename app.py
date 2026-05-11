@@ -2507,9 +2507,10 @@ def not_found(_error):
     return render_template("404.html"), 404
 
 
+with app.app_context():
+    init_database()
+
 if __name__ == "__main__":
-    with app.app_context():
-        init_database()
     app.run(
         host="0.0.0.0",
         port=5000,
