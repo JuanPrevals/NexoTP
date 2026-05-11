@@ -20,6 +20,8 @@
       <p class="muted mini">Correo: {{ current_user.email }}</p>
       {% if current_user.linkedin %}<a class="btn btn-secondary btn-wide" href="{{ current_user.linkedin }}" target="_blank">LinkedIn</a>{% endif %}
       {% if current_user.portafolio %}<a class="btn btn-secondary btn-wide" href="{{ current_user.portafolio }}" target="_blank">Portafolio</a>{% endif %}
+      <a class="btn btn-secondary btn-wide" href="{{ url_for('perfil_publico', usuario_id=current_user.id) }}">Perfil publico</a>
+      <a class="btn btn-accent btn-wide" href="{{ url_for('descargar_cv') }}">Generar CV PDF</a>
       <a class="btn btn-primary btn-wide" href="{{ url_for('editar_perfil') }}">Editar CV</a>
     </div>
   </aside>

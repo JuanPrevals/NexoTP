@@ -1,20 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Feed · {{ app_name }}{% endblock %}
+{% block title %}Feed - {{ app_name }}{% endblock %}
 {% block content %}
-<div class="page">
-  <div class="row between">
+<div class="page feed-page">
+  <div class="row between feed-header">
     <div>
       <p class="eyebrow">Feed</p>
-      <h1>Oportunidades y novedades</h1>
+      <h1>Oportunidades para ti</h1>
+      <p class="lead">Ofertas ordenadas por compatibilidad, cercania y especialidad.</p>
     </div>
-    <a class="btn btn-secondary" href="{{ url_for('red') }}">Ver red</a>
+    <div class="row">
+      <a class="btn btn-secondary" href="{{ url_for('dashboard') }}">Ver dashboard</a>
+      <a class="btn btn-secondary" href="{{ url_for('mapa') }}">Mapa</a>
+    </div>
   </div>
 
-  <div class="app-grid">
-    <aside class="form-card sticky">
+  <div class="feed-grid">
+    <aside class="form-card sticky feed-filters">
       <h2>Filtros</h2>
       <form class="form-card flat" method="get">
-        <div class="field"><label>Buscar</label><input name="q" value="{{ filtros.q }}" placeholder="cargo o habilidad"></div>
+        <div class="field"><label>Buscar</label><input name="q" value="{{ filtros.q }}" placeholder="cargo, empresa o habilidad"></div>
         <div class="field">
           <label>Especialidad</label>
           <select name="especialidad">
@@ -29,33 +33,91 @@
             {% for item in modalidades %}<option value="{{ item }}" {% if filtros.modalidad == item %}selected{% endif %}>{{ item }}</option>{% endfor %}
           </select>
         </div>
-        <button class="btn btn-primary btn-wide">Filtrar</button>
-        <a class="btn btn-secondary btn-wide" href="{{ url_for('feed') }}">Limpiar</a>
+        <div class="field">
+          <label>Comuna</label>
+          <select name="comuna">
+            <option value="">Todas</option>
+            {% for item in comunas %}<option value="{{ item }}" {% if filtros.comuna == item %}selected{% endif %}>{{ item }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="row">
+          <button class="btn btn-primary">Filtrar</button>
+          <a class="btn btn-secondary" href="{{ url_for('feed') }}">Limpiar</a>
+        </div>
       </form>
     </aside>
 
-    <section class="stack">
+    <section class="feed-main stack">
+      <div class="card feed-summary">
+        <div>
+          <h2>{{ ofertas|length }} oportunidades visibles</h2>
+          <p class="muted">Las tarjetas muestran primero lo decisivo. Requisitos y mejoras de match quedan agrupados para leerlos cuando los necesites.</p>
+        </div>
+        <div class="feed-news">
+          {% for novedad in novedades[:3] %}
+            <article class="feed-card flat">
+              <strong>{{ novedad.titulo }}</strong>
+              <p class="muted mini">{{ novedad.detalle }}</p>
+            </article>
+          {% endfor %}
+        </div>
+      </div>
+
       {% for oferta in ofertas %}
-        <article class="job-card">
-          <div class="job-top">
+        <article class="job-card feed-job-card">
+          <div class="feed-job-head">
             <div class="logo" style="--logo: {{ oferta.empresa.color }}">{{ oferta.empresa.logo_inicial }}</div>
-            <div>
+            <div class="feed-job-title">
               <div class="row between">
-                <strong>{{ oferta.empresa.nombre }}</strong>
+                <strong><a href="{{ url_for('empresa_publica', empresa_id=oferta.empresa.id) }}">{{ oferta.empresa.nombre }}</a></strong>
                 <span class="muted mini">{{ oferta.fecha_publicacion.strftime('%d-%m-%Y') }}</span>
               </div>
               <h2>{{ oferta.titulo }}</h2>
               <p class="muted">{{ oferta.descripcion }}</p>
             </div>
+            <div class="match-score">
+              <strong>{{ match_map[oferta.id] }}%</strong>
+              <span>compatible</span>
+            </div>
           </div>
-          <div class="chips">
-            <span class="chip chip-accent">{{ oferta.especialidad_req }}</span>
-            <span class="chip">{{ oferta.modalidad }}</span>
-            <span class="chip">{{ oferta.jornada }}</span>
-            <span class="chip">{{ oferta.comuna }}</span>
+
+          <div class="feed-meta-grid">
+            <div>
+              <span class="mini muted">Especialidad</span>
+              <strong>{{ oferta.especialidad_req }}</strong>
+            </div>
+            <div>
+              <span class="mini muted">Ubicacion</span>
+              <strong>{{ oferta.comuna }}</strong>
+            </div>
+            <div>
+              <span class="mini muted">Modalidad</span>
+              <strong>{{ oferta.modalidad }}</strong>
+            </div>
+            <div>
+              <span class="mini muted">Jornada</span>
+              <strong>{{ oferta.jornada }}</strong>
+            </div>
           </div>
-          <div class="card-actions">
-            <span class="muted mini">{{ oferta.sueldo or "Renta a convenir" }}</span>
+
+          <details class="feed-details">
+            <summary>Ver requisitos y recomendaciones</summary>
+            <div class="chips">
+              <span class="chip">{{ oferta.tipo }}</span>
+              {% if oferta.incluye_mentoria %}<span class="chip chip-accent">Mentoria incluida</span>{% endif %}
+              {% for requisito in oferta.requisitos_lista[:5] %}
+                <span class="chip">{{ requisito }}</span>
+              {% endfor %}
+            </div>
+            {% if faltantes_map[oferta.id] %}
+              <p class="muted mini">Para subir tu match: {{ faltantes_map[oferta.id]|join(', ') }}</p>
+            {% else %}
+              <p class="muted mini">Tu perfil cubre los requisitos principales detectados.</p>
+            {% endif %}
+          </details>
+
+          <div class="card-actions feed-job-actions">
+            <span class="muted">{{ oferta.sueldo or "Renta a convenir" }}</span>
             {% if oferta.id in mis_postulaciones %}
               <button class="btn btn-secondary" disabled>Postulado</button>
             {% else %}
@@ -64,23 +126,9 @@
           </div>
         </article>
       {% else %}
-        <div class="empty-state"><h2>Sin resultados</h2><p class="muted">Cambia los filtros.</p></div>
+        <div class="empty-state"><h2>Sin resultados</h2><p class="muted">Cambia los filtros o revisa el mapa de oportunidades.</p></div>
       {% endfor %}
     </section>
-
-    <aside class="stack sticky">
-      <div class="card">
-        <h2>Novedades</h2>
-        <div class="timeline">
-          {% for novedad in novedades %}
-            <div class="feed-card flat">
-              <strong>{{ novedad.titulo }}</strong>
-              <p class="muted mini">{{ novedad.detalle }}</p>
-            </div>
-          {% endfor %}
-        </div>
-      </div>
-    </aside>
   </div>
 </div>
 {% endblock %}

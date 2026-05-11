@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ usuario.nombre_completo }} - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page profile-grid">
+  <aside class="card sticky">
+    <div class="profile-head">
+      {% if usuario.foto_url %}
+        <img class="avatar" src="{{ usuario.foto_url }}" alt="Foto de perfil">
+      {% else %}
+        <div class="avatar">{{ usuario.iniciales }}</div>
+      {% endif %}
+      <div>
+        <h2>{{ usuario.nombre_completo }}</h2>
+        <p class="muted">{{ usuario.especialidad }} - {{ usuario.comuna }}, {{ usuario.pais }}</p>
+      </div>
+    </div>
+    <p>{{ usuario.perfil_profesional or usuario.sobre_mi or "Perfil profesional en construccion." }}</p>
+    <div class="chips">
+      {% for habilidad in usuario.habilidades_lista[:6] %}
+        <span class="chip">{{ habilidad }}</span>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <section class="stack">
+    <div class="card">
+      <h2>Formacion</h2>
+      <p><strong>{{ usuario.carrera_titulo or usuario.especialidad }}</strong></p>
+      <p class="muted">{{ usuario.institucion or usuario.liceo }} - {{ usuario.anio_egreso or "Egreso no informado" }}</p>
+    </div>
+    <div class="card">
+      <h2>Proyectos y portafolio</h2>
+      <p class="muted">{{ usuario.proyectos or "Sin proyectos publicados." }}</p>
+      {% if usuario.portafolio %}<a class="btn btn-secondary" href="{{ usuario.portafolio }}" target="_blank">Abrir portafolio</a>{% endif %}
+    </div>
+    <div class="card">
+      <h2>Experiencia validada</h2>
+      <div class="stack">
+        {% for p in postulaciones_aceptadas %}
+          <article class="feed-card flat">
+            <strong>{{ p.oferta.titulo }}</strong>
+            <p class="muted mini">{{ p.oferta.empresa.nombre }} - {{ p.fecha.strftime('%d-%m-%Y') }}</p>
+          </article>
+        {% else %}
+          <p class="muted">Aun no registra experiencias aceptadas en NexoTP.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

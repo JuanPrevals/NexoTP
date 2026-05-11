@@ -12,9 +12,11 @@
       <div class="field"><label>Ubicacion</label><input name="ubicacion" value="{{ empresa.ubicacion }}" required></div>
       <div class="field"><label>Contacto</label><input name="contacto" value="{{ empresa.contacto or '' }}"></div>
       <div class="field"><label>Web</label><input name="web" value="{{ empresa.web or '' }}"></div>
+      <div class="field"><label>Foto URL</label><input name="foto_url" value="{{ empresa.foto_url or '' }}"></div>
       <div class="field"><label>Iniciales</label><input name="logo_inicial" value="{{ empresa.logo_inicial or '' }}"></div>
       <div class="field"><label>Color</label><input name="color" value="{{ empresa.color or '' }}"></div>
     </div>
+    <div class="field checkbox-field"><label><input type="checkbox" name="amigable_tp" value="1" {% if empresa.amigable_tp %}checked{% endif %}> Amigable con egresados TP</label></div>
     <div class="field"><label>Descripcion</label><textarea name="descripcion">{{ empresa.descripcion or '' }}</textarea></div>
     <button class="btn btn-primary btn-wide">Guardar empresa</button>
   </form>

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Acceso liceo - {{ app_name }}{% endblock %}
+{% block content %}
+<section class="auth">
+  <div>
+    <p class="eyebrow">Institucion</p>
+    <h1>Panel de impacto</h1>
+    <p class="lead">Acceso para supervisar practicas, reportes PTECH IBM e insercion laboral por especialidad.</p>
+  </div>
+  <form class="form-card" method="post">
+    <h2>Ingresar</h2>
+    <div class="field"><label>Email institucional</label><input name="email" type="email" required value="liceo@nexotp.cl"></div>
+    <div class="field"><label>Contrasena</label><input name="password" type="password" required placeholder="liceo123"></div>
+    <button class="btn btn-primary btn-wide">Entrar</button>
+  </form>
+</section>
+{% endblock %}

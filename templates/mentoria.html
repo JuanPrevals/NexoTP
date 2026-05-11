@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Mentoria - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="row between">
+    <div><p class="eyebrow">Mentoria</p><h1>Acompanamiento profesional</h1></div>
+  </div>
+
+  <section class="stack">
+    {% for p in postulaciones %}
+      <article class="job-card">
+        <div class="row between">
+          <div>
+            <h2>{{ p.oferta.titulo }}</h2>
+            <p class="muted">{{ p.oferta.empresa.nombre }} - Mentor: {{ p.oferta.mentor_nombre or "Por asignar" }}</p>
+          </div>
+          <span class="chip">{{ p.sesiones_mentoria|length }} sesiones</span>
+        </div>
+        <p class="muted">{{ p.oferta.mentor_bio or "La empresa acompanara tus objetivos de aprendizaje durante el proceso." }}</p>
+        <div class="stack">
+          {% for s in p.sesiones_mentoria|sort(attribute='fecha_programada') %}
+            <div class="feed-card flat">
+              <div class="row between">
+                <strong>{{ s.fecha_programada.strftime('%d-%m-%Y %H:%M') }}</strong>
+                <span class="chip">{% if s.completada %}Completada{% else %}Pendiente{% endif %}</span>
+              </div>
+              <p class="muted">{{ s.objetivo }}</p>
+              {% if s.evaluacion %}<p class="muted"><strong>Evaluacion mentor:</strong> {{ s.evaluacion }}</p>{% endif %}
+              <form class="form-card flat" method="post" action="{{ url_for('actualizar_sesion_mentoria', sesion_id=s.id) }}">
+                <div class="field"><label>Avances y acuerdos</label><textarea name="avances">{{ s.avances or "" }}</textarea></div>
+                <div class="field checkbox-field"><label><input type="checkbox" name="completada" value="1" {% if s.completada %}checked{% endif %}> Marcar como completada</label></div>
+                <button class="btn btn-secondary">Guardar avance</button>
+              </form>
+            </div>
+          {% else %}
+            <p class="muted">La empresa aun no programa sesiones.</p>
+          {% endfor %}
+        </div>
+      </article>
+    {% else %}
+      <div class="empty-state"><h2>No tienes mentorias activas.</h2><p class="muted">Apareceran cuando una postulacion aceptada incluya mentoria.</p></div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

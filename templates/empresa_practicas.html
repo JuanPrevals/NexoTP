@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Practicas empresa - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="row between">
+    <div><p class="eyebrow">Empresa</p><h1>Practicas profesionales</h1></div>
+    <a class="btn btn-primary" href="{{ url_for('nueva_oferta') }}">Publicar practica</a>
+  </div>
+
+  <section class="stack">
+    {% for practica in practicas %}
+      <article class="job-card">
+        <div class="row between">
+          <div>
+            <h2>{{ practica.postulacion.usuario.nombre_completo }}</h2>
+            <p class="muted">{{ practica.postulacion.oferta.titulo }} - {{ practica.estado }}</p>
+          </div>
+          <span class="chip">{{ practica.progreso }}%</span>
+        </div>
+        <div class="progress"><span style="width: {{ practica.progreso }}%"></span></div>
+        <p class="muted mini">{{ practica.horas_registradas }} / {{ practica.horas_objetivo }} horas</p>
+        <form class="form-card flat" method="post" action="{{ url_for('evaluar_practica_empresa', practica_id=practica.id) }}">
+          <div class="grid-2">
+            <div class="field">
+              <label>Estado</label>
+              <select name="estado">
+                {% for estado in ["Pendiente aprobacion", "Aprobada por liceo", "En curso", "Completada", "Requiere ajuste"] %}
+                  <option value="{{ estado }}" {% if practica.estado == estado %}selected{% endif %}>{{ estado }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field"><label>Evaluacion empresa</label><input name="evaluacion_empresa" value="{{ practica.evaluacion_empresa or '' }}"></div>
+          </div>
+          <button class="btn btn-secondary">Guardar</button>
+        </form>
+        <details class="feed-card flat">
+          <summary>Actividades registradas</summary>
+          <div class="stack" style="margin-top:1rem;">
+            {% for s in practica.seguimientos|sort(attribute='fecha', reverse=True) %}
+              <div class="feed-card flat"><strong>{{ s.horas }} horas</strong><p class="muted">{{ s.actividad }}</p></div>
+            {% else %}
+              <p class="muted">Sin actividades registradas.</p>
+            {% endfor %}
+          </div>
+        </details>
+      </article>
+    {% else %}
+      <div class="empty-state"><h2>No hay practicas creadas.</h2><p class="muted">Publica una oferta de tipo practica o acepta una postulacion existente.</p></div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

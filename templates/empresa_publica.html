@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ empresa.nombre }} - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <section class="company-profile">
+    {% if empresa.foto_url %}
+      <img class="avatar big-logo" src="{{ empresa.foto_url }}" alt="{{ empresa.nombre }}">
+    {% else %}
+      <div class="logo big-logo" style="--logo: {{ empresa.color }}">{{ empresa.logo_inicial }}</div>
+    {% endif %}
+    <div>
+      <p class="eyebrow">Empresa</p>
+      <h1>{{ empresa.nombre }}</h1>
+      <p class="lead">{{ empresa.descripcion }}</p>
+      <div class="chips">
+        <span class="chip">{{ empresa.rubro }}</span>
+        <span class="chip">{{ empresa.ubicacion }}</span>
+        {% if empresa.amigable_tp %}<span class="chip chip-accent">Amigable con egresados TP</span>{% endif %}
+        <span class="chip">{{ promedio }} / 5 resenas</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-3 section">
+    <div class="stat"><strong>{{ aceptadas|length }}</strong><span class="muted">egresados contratados</span></div>
+    <div class="stat"><strong>{{ tasa }}%</strong><span class="muted">tasa de aceptacion</span></div>
+    <div class="stat"><strong>{{ historicas }}</strong><span class="muted">ofertas historicas</span></div>
+  </section>
+
+  <section class="grid-2">
+    <div class="card">
+      <h2>Ofertas activas</h2>
+      <div class="stack">
+        {% for oferta in ofertas_activas %}
+          <article class="feed-card flat">
+            <strong>{{ oferta.titulo }}</strong>
+            <p class="muted mini">{{ oferta.especialidad_req }} - {{ oferta.comuna }} - {{ oferta.tipo }}</p>
+          </article>
+        {% else %}
+          <p class="muted">Sin ofertas activas.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Resenas de egresados</h2>
+      <div class="stack">
+        {% for r in empresa.resenas %}
+          <article class="feed-card flat">
+            <strong>{{ r.usuario.nombre_completo }} - {{ r.calificacion }}/5</strong>
+            <p class="muted">{{ r.comentario }}</p>
+          </article>
+        {% else %}
+          <p class="muted">Aun no hay resenas.</p>
+        {% endfor %}
+      </div>
+      {% if puede_dejar_resena %}
+        <form class="form-card flat" method="post">
+          <div class="field"><label>Calificacion</label><select name="calificacion">{% for n in [5,4,3,2,1] %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select></div>
+          <div class="field"><label>Comentario</label><textarea name="comentario" required></textarea></div>
+          <button class="btn btn-primary">Guardar resena</button>
+        </form>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Impacto institucional - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="row between">
+    <div><p class="eyebrow">{{ institucion.tipo }}</p><h1>{{ institucion.nombre }}</h1></div>
+    <a class="btn btn-primary" href="{{ url_for('reporte_institucion_csv') }}">Exportar reporte</a>
+  </div>
+
+  <section class="grid-3">
+    <div class="stat"><strong>{{ metricas.egresados }}</strong><span class="muted">egresados registrados</span></div>
+    <div class="stat"><strong>{{ metricas.empresas }}</strong><span class="muted">empresas aliadas</span></div>
+    <div class="stat"><strong>{{ metricas.ptech }}</strong><span class="muted">perfiles PTECH IBM</span></div>
+  </section>
+
+  <section class="grid-2 section">
+    <div class="card">
+      <h2>Insercion por especialidad</h2>
+      <div class="bar-list">
+        {% for item in por_especialidad %}
+          <div class="bar-row">
+            <span>{{ item.nombre }}</span>
+            <div class="bar-track"><span style="width: {{ item.tasa }}%"></span></div>
+            <strong>{{ item.tasa }}%</strong>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <h2>Metricas operativas</h2>
+      <div class="grid-2">
+        <div class="stat flat"><strong>{{ metricas.aceptados }}</strong><span class="muted">aceptaciones</span></div>
+        <div class="stat flat"><strong>{{ metricas.practicas }}</strong><span class="muted">practicas</span></div>
+      </div>
+      <p class="muted mini">Reporte listo para sostenedores, MINEDUC y seguimiento del convenio.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Supervision de practicas</h2>
+    <div class="stack">
+      {% for practica in practicas %}
+        <article class="feed-card flat">
+          <div class="row between">
+            <div>
+              <strong>{{ practica.postulacion.usuario.nombre_completo }}</strong>
+              <p class="muted mini">{{ practica.postulacion.oferta.empresa.nombre }} - {{ practica.postulacion.oferta.titulo }}</p>
+            </div>
+            <span class="chip">{{ practica.estado }}</span>
+          </div>
+          <form class="form-card flat" method="post" action="{{ url_for('actualizar_estado_practica_institucion', practica_id=practica.id) }}">
+            <div class="grid-2">
+              <div class="field">
+                <label>Estado liceo</label>
+                <select name="estado">
+                  {% for estado in ["Pendiente aprobacion", "Aprobada por liceo", "En curso", "Completada", "Requiere ajuste"] %}
+                    <option value="{{ estado }}" {% if practica.estado == estado %}selected{% endif %}>{{ estado }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="field"><label>Supervisor</label><input name="supervisor_liceo" value="{{ practica.supervisor_liceo or '' }}"></div>
+            </div>
+            <button class="btn btn-secondary">Actualizar</button>
+          </form>
+        </article>
+      {% else %}
+        <p class="muted">No hay practicas registradas.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

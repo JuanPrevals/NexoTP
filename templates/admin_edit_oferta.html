@@ -12,11 +12,23 @@
       <div class="field"><label>Comuna</label><input name="comuna" value="{{ oferta.comuna }}"></div>
       <div class="field"><label>Modalidad</label><input name="modalidad" value="{{ oferta.modalidad }}"></div>
       <div class="field"><label>Jornada</label><input name="jornada" value="{{ oferta.jornada }}"></div>
+      <div class="field"><label>Tipo</label><select name="tipo">{% for i in tipos_oferta %}<option value="{{ i }}" {% if oferta.tipo == i %}selected{% endif %}>{{ i }}</option>{% endfor %}</select></div>
       <div class="field"><label>Sueldo</label><input name="sueldo" value="{{ oferta.sueldo or '' }}"></div>
       <div class="field"><label>Vacantes</label><input name="vacantes" type="number" min="1" value="{{ oferta.vacantes }}"></div>
+      <div class="field"><label>Horas practica</label><input name="horas_practica" type="number" min="1" value="{{ oferta.horas_practica or 450 }}"></div>
+      <div class="field"><label>Inicio practica</label><input name="fecha_inicio" type="date" value="{{ oferta.fecha_inicio or '' }}"></div>
+      <div class="field"><label>Fin practica</label><input name="fecha_fin" type="date" value="{{ oferta.fecha_fin or '' }}"></div>
       <div class="field"><label>Estado</label><select name="activa"><option value="1" {% if oferta.activa %}selected{% endif %}>Activa</option><option value="0" {% if not oferta.activa %}selected{% endif %}>Oculta</option></select></div>
     </div>
     <div class="field"><label>Requisitos</label><textarea name="requisitos">{{ oferta.requisitos or '' }}</textarea></div>
+    <div class="field checkbox-field"><label><input type="checkbox" name="incluye_mentoria" value="1" {% if oferta.incluye_mentoria %}checked{% endif %}> Incluye mentoria</label></div>
+    <div class="grid-2">
+      <div class="field"><label>Mentor</label><input name="mentor_nombre" value="{{ oferta.mentor_nombre or '' }}"></div>
+      <div class="field"><label>Cargo mentor</label><input name="mentor_cargo" value="{{ oferta.mentor_cargo or '' }}"></div>
+    </div>
+    <div class="field"><label>Email mentor</label><input name="mentor_email" value="{{ oferta.mentor_email or '' }}"></div>
+    <div class="field"><label>Bio mentor</label><textarea name="mentor_bio">{{ oferta.mentor_bio or '' }}</textarea></div>
+    <div class="field"><label>Convenio digital</label><textarea name="convenio_digital">{{ oferta.convenio_digital or '' }}</textarea></div>
     <button class="btn btn-primary btn-wide">Guardar oferta</button>
   </form>
 </section>

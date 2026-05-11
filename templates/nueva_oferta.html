@@ -15,10 +15,26 @@
       <div class="field"><label>Jornada</label><select name="jornada">{% for i in jornadas %}<option>{{ i }}</option>{% endfor %}</select></div>
     </div>
     <div class="grid-2">
+      <div class="field"><label>Tipo</label><select name="tipo">{% for i in tipos_oferta %}<option>{{ i }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Horas de practica</label><input name="horas_practica" type="number" min="1" value="450"></div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Fecha inicio practica</label><input name="fecha_inicio" type="date"></div>
+      <div class="field"><label>Fecha fin practica</label><input name="fecha_fin" type="date"></div>
+    </div>
+    <div class="grid-2">
       <div class="field"><label>Sueldo</label><input name="sueldo" placeholder="$300.000 - $450.000"></div>
       <div class="field"><label>Vacantes</label><input name="vacantes" type="number" min="1" value="1"></div>
     </div>
     <div class="field"><label>Requisitos separados por ;</label><input name="requisitos" placeholder="Excel basico; orden; disponibilidad"></div>
+    <div class="field checkbox-field"><label><input type="checkbox" name="incluye_mentoria" value="1" checked> Incluye mentoria</label></div>
+    <div class="grid-2">
+      <div class="field"><label>Mentor asignado</label><input name="mentor_nombre" placeholder="Nombre del mentor"></div>
+      <div class="field"><label>Cargo mentor</label><input name="mentor_cargo" placeholder="Tutor senior"></div>
+    </div>
+    <div class="field"><label>Email mentor</label><input name="mentor_email" type="email" placeholder="mentor@empresa.cl"></div>
+    <div class="field"><label>Perfil del mentor</label><textarea name="mentor_bio" placeholder="Experiencia y foco de acompanamiento"></textarea></div>
+    <div class="field"><label>Convenio digital empresa-liceo</label><textarea name="convenio_digital" placeholder="Condiciones, horario, supervisor y objetivos"></textarea></div>
     <button class="btn btn-primary btn-wide">Publicar</button>
   </form>
 </section>

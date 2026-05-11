@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Mapa - {{ app_name }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<div class="page">
+  <div class="row between">
+    <div><p class="eyebrow">Mapa</p><h1>Oportunidades por comuna</h1></div>
+    <a class="btn btn-secondary" href="{{ url_for('feed') }}">Volver al feed</a>
+  </div>
+
+  <form class="form-card map-filters" method="get">
+    <div class="grid-3">
+      <div class="field">
+        <label>Comuna</label>
+        <select name="comuna">
+          <option value="">Todas</option>
+          {% for item in comunas %}<option value="{{ item }}" {% if filtros.comuna == item %}selected{% endif %}>{{ item }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Especialidad</label>
+        <select name="especialidad">
+          <option value="">Todas</option>
+          {% for item in especialidades %}<option value="{{ item }}" {% if filtros.especialidad == item %}selected{% endif %}>{{ item }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Radio desde tu comuna (km)</label><input type="number" name="radio" min="1" max="50" value="{{ filtros.radio }}"></div>
+    </div>
+    <button class="btn btn-primary">Filtrar mapa</button>
+  </form>
+
+  <section class="map-layout">
+    <div id="opportunity-map" class="map-canvas" data-center='{{ centro|safe }}'></div>
+    <aside class="card">
+      <h2>Densidad de oportunidades</h2>
+      <div class="stack" id="density-list"></div>
+    </aside>
+  </section>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  window.NexoMapData = {
+    puntos: {{ puntos|safe }},
+    densidad: {{ densidad|safe }},
+    centro: {{ centro|safe }},
+    radio: {{ radio }}
+  };
+</script>
+{% endblock %}

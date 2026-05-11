@@ -1,14 +1,140 @@
 {% extends "base.html" %}
-{% block title %}FAQ · {{ app_name }}{% endblock %}
+{% block title %}FAQ - {{ app_name }}{% endblock %}
 {% block content %}
-<div class="page" style="max-width:820px;">
+<div class="page" style="max-width:920px;">
   <p class="eyebrow">FAQ</p>
   <h1>Preguntas frecuentes</h1>
-  <div class="stack">
-    <details open><summary>Que es {{ app_name }}?</summary><p class="muted">Una red laboral simple para egresados tecnico-profesionales y empresas.</p></details>
-    <details><summary>Las ofertas quedan guardadas?</summary><p class="muted">Si. Se almacenan en SQLite. Al refrescar la pagina siguen disponibles.</p></details>
-    <details><summary>Hay cuentas de empresa?</summary><p class="muted">Si. Una empresa puede registrarse, entrar al panel y publicar ofertas.</p></details>
-    <details><summary>Hay red social?</summary><p class="muted">Si. Los usuarios pueden agregar colegas y ver novedades del sistema.</p></details>
-  </div>
+  <p class="lead">
+    {{ app_name }} conecta egresados tecnico-profesionales, empresas y liceos para facilitar la primera insercion laboral,
+    la practica profesional y el seguimiento de resultados reales.
+  </p>
+
+  <section class="stack section">
+    <h2>Para egresados</h2>
+    <details open>
+      <summary>Que puedo hacer como egresado en {{ app_name }}?</summary>
+      <p class="muted">Puedes crear tu perfil laboral, postular a ofertas, generar un CV en PDF, conversar con empresas, recibir notificaciones, revisar tu avance en un dashboard y buscar oportunidades cercanas en el mapa.</p>
+    </details>
+    <details>
+      <summary>Como funciona el porcentaje de compatibilidad?</summary>
+      <p class="muted">El sistema compara tu especialidad, comuna y habilidades con los requisitos de cada oferta. Mientras mas coincidan tus habilidades con lo que pide la empresa, mayor sera el porcentaje de match.</p>
+    </details>
+    <details>
+      <summary>Que pasa si me faltan habilidades para una oferta?</summary>
+      <p class="muted">En el feed se muestran sugerencias breves sobre habilidades que podrian mejorar tu compatibilidad. La idea es que sepas que reforzar antes de postular o antes de una entrevista.</p>
+    </details>
+    <details>
+      <summary>Para que sirve el dashboard?</summary>
+      <p class="muted">El dashboard muestra tus postulaciones enviadas, respuestas recibidas, tasa de aceptacion, actividad por semana, ofertas recomendadas y una comparacion anonima con otros egresados de tu especialidad.</p>
+    </details>
+    <details>
+      <summary>Como genero mi CV?</summary>
+      <p class="muted">Desde tu perfil puedes usar el boton Generar CV PDF. El archivo toma tus datos, habilidades, formacion, proyectos y enlace a tu perfil publico de NexoTP.</p>
+    </details>
+    <details>
+      <summary>Que es el perfil publico?</summary>
+      <p class="muted">Es una version visible de tu perfil para que una empresa pueda revisar tu formacion, proyectos, habilidades y experiencias aceptadas dentro de la plataforma.</p>
+    </details>
+    <details>
+      <summary>Puedo conversar con una empresa?</summary>
+      <p class="muted">Si. Cada postulacion puede tener una conversacion directa entre el egresado y la empresa. Los mensajes se actualizan en tiempo real y muestran cuando la otra persona esta escribiendo.</p>
+    </details>
+    <details>
+      <summary>Que notificaciones recibo?</summary>
+      <p class="muted">Recibes avisos cuando postulas, cuando una empresa responde, cuando llega un mensaje y cuando aparece una oferta compatible con tu especialidad y habilidades.</p>
+    </details>
+    <details>
+      <summary>Como funciona el mapa de oportunidades?</summary>
+      <p class="muted">El mapa muestra ofertas activas por comuna. Puedes filtrar por especialidad, comuna y radio de busqueda desde tu ubicacion de referencia.</p>
+    </details>
+  </section>
+
+  <section class="stack section">
+    <h2>Practicas y mentoria</h2>
+    <details>
+      <summary>Que diferencia hay entre una oferta de empleo y una practica?</summary>
+      <p class="muted">Una oferta de empleo busca contratacion laboral. Una practica incluye fechas de inicio y termino, horas objetivo, convenio digital, supervision y seguimiento de avances.</p>
+    </details>
+    <details>
+      <summary>Como se registran las horas de practica?</summary>
+      <p class="muted">Cuando una practica queda activa, el egresado puede registrar actividades y horas realizadas. La empresa y el liceo pueden revisar el progreso y el estado general.</p>
+    </details>
+    <details>
+      <summary>Que es el certificado digital de practica?</summary>
+      <p class="muted">Cada practica puede tener un codigo de certificado asociado. Sirve como respaldo interno del proceso y del cumplimiento de horas y evaluaciones.</p>
+    </details>
+    <details>
+      <summary>Como funciona la mentoria?</summary>
+      <p class="muted">Las empresas pueden publicar ofertas con mentoria. Al aceptar una postulacion, se pueden programar sesiones, registrar objetivos, avances y evaluaciones del mentor.</p>
+    </details>
+    <details>
+      <summary>Por que la mentoria es importante?</summary>
+      <p class="muted">Para muchos egresados, el problema no es solo encontrar una oportunidad, sino entender como entrar al mundo laboral, presentar sus competencias y recibir orientacion profesional.</p>
+    </details>
+  </section>
+
+  <section class="stack section">
+    <h2>Para empresas</h2>
+    <details>
+      <summary>Que puede hacer una empresa?</summary>
+      <p class="muted">Una empresa puede registrarse, publicar ofertas, gestionar postulaciones, aceptar o rechazar candidatos, conversar con postulantes, crear practicas, programar mentorias y revisar perfiles publicos.</p>
+    </details>
+    <details>
+      <summary>Se puede aceptar a la misma persona varias veces?</summary>
+      <p class="muted">No. Una postulacion ya aceptada o rechazada queda cerrada. El sistema bloquea acciones repetidas y evita notificaciones duplicadas.</p>
+    </details>
+    <details>
+      <summary>Que ocurre con las vacantes?</summary>
+      <p class="muted">Cada oferta tiene un numero de vacantes. Cuando los cupos se completan, el sistema impide aceptar mas postulantes para esa misma oferta.</p>
+    </details>
+    <details>
+      <summary>Para que sirve el perfil publico de empresa?</summary>
+      <p class="muted">Muestra descripcion, rubro, ubicacion, ofertas activas, estadisticas, resenas y una insignia de empresa amigable con egresados TP. Esto ayuda a generar confianza.</p>
+    </details>
+    <details>
+      <summary>Las empresas pueden recibir resenas?</summary>
+      <p class="muted">Si. Los egresados aceptados por una empresa pueden dejar una resena. Esto ayuda a otros estudiantes a conocer la experiencia de postulacion o practica.</p>
+    </details>
+  </section>
+
+  <section class="stack section">
+    <h2>Para liceos e instituciones</h2>
+    <details>
+      <summary>Que muestra el panel institucional?</summary>
+      <p class="muted">Muestra egresados registrados, empresas aliadas, aceptaciones, practicas, perfiles vinculados a PTECH IBM e insercion laboral por especialidad.</p>
+    </details>
+    <details>
+      <summary>El liceo puede supervisar practicas?</summary>
+      <p class="muted">Si. El panel institucional permite revisar practicas, actualizar su estado, asignar supervisor y monitorear el avance del convenio empresa-liceo.</p>
+    </details>
+    <details>
+      <summary>Se pueden exportar reportes?</summary>
+      <p class="muted">Si. El panel institucional incluye exportacion CSV para respaldar indicadores frente a sostenedores, MINEDUC o equipos del programa.</p>
+    </details>
+    <details>
+      <summary>Por que se enfoca en comunas del sector sur?</summary>
+      <p class="muted">Porque la cercania, el transporte y la disponibilidad de oportunidades son factores concretos para estudiantes de comunas como San Ramon, La Pintana, El Bosque, La Granja y Pedro Aguirre Cerda.</p>
+    </details>
+  </section>
+
+  <section class="stack section">
+    <h2>Privacidad y uso</h2>
+    <details>
+      <summary>Quien ve mis datos?</summary>
+      <p class="muted">Las empresas pueden ver la informacion necesaria para evaluar postulaciones y perfiles publicos. El liceo revisa datos agregados y seguimiento de practicas para supervision institucional.</p>
+    </details>
+    <details>
+      <summary>La comparacion del dashboard muestra nombres?</summary>
+      <p class="muted">No. La comparacion con otros egresados es anonima y se usa para orientar tu avance, no para exponer informacion personal.</p>
+    </details>
+    <details>
+      <summary>Los datos quedan guardados?</summary>
+      <p class="muted">Si. En esta version local, la informacion se almacena en la base SQLite del proyecto. Al refrescar la pagina, las ofertas, postulaciones y mensajes siguen disponibles.</p>
+    </details>
+    <details>
+      <summary>Esta version envia correos reales?</summary>
+      <p class="muted">Puede hacerlo si se configuran variables SMTP. Si no se configuran, las notificaciones quedan dentro de la plataforma y se actualizan en tiempo real.</p>
+    </details>
+  </section>
 </div>
 {% endblock %}

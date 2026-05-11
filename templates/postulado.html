@@ -24,6 +24,11 @@
             {% if p.fecha_respuesta %}<p class="muted mini">{{ p.fecha_respuesta.strftime('%d-%m-%Y') }}</p>{% endif %}
           </div>
         {% endif %}
+        <div class="card-actions">
+          <a class="btn btn-secondary" href="{{ url_for('mensajes_usuario', postulacion_id=p.id) }}">Abrir conversacion</a>
+          {% if p.practica %}<a class="btn btn-secondary" href="{{ url_for('practicas') }}">Seguimiento practica</a>{% endif %}
+          {% if p.oferta.incluye_mentoria %}<a class="btn btn-secondary" href="{{ url_for('mentoria') }}">Mentoria</a>{% endif %}
+        </div>
       </article>
     {% else %}
       <div class="empty-state">

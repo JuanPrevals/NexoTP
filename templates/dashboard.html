@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="row between">
+    <div><p class="eyebrow">Dashboard</p><h1>Tu avance laboral</h1></div>
+    <a class="btn btn-primary" href="{{ url_for('feed') }}">Ver ofertas recomendadas</a>
+  </div>
+
+  <section class="grid-3">
+    <div class="stat"><strong>{{ postulaciones|length }}</strong><span class="muted">postulaciones enviadas</span></div>
+    <div class="stat"><strong>{{ respondidas|length }}</strong><span class="muted">respuestas recibidas</span></div>
+    <div class="stat"><strong>{{ tasa_aceptacion }}%</strong><span class="muted">tasa de aceptacion</span></div>
+  </section>
+
+  <section class="grid-2 section">
+    <div class="card">
+      <h2>Actividad por semana</h2>
+      <div class="bar-list">
+        {% for semana in semanas %}
+          <div class="bar-row">
+            <span>{{ semana.label }}</span>
+            <div class="bar-track"><span style="width: {{ [semana.total * 24, 8]|max }}%"></span></div>
+            <strong>{{ semana.total }}</strong>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Comparacion anonima</h2>
+      <p class="muted">Especialidad: {{ current_user.especialidad }}</p>
+      <div class="grid-2">
+        <div class="stat flat"><strong>{{ total_pares }}</strong><span class="muted">pares activos</span></div>
+        <div class="stat flat"><strong>{{ promedio_postulaciones }}</strong><span class="muted">postulaciones promedio</span></div>
+      </div>
+      <p class="muted mini">Tasa de aceptacion del grupo: {{ tasa_pares }}%</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row between">
+      <h2>Ofertas recomendadas</h2>
+      <a class="btn btn-secondary" href="{{ url_for('mapa') }}">Ver en mapa</a>
+    </div>
+    <div class="stack">
+      {% for oferta in recomendadas %}
+        <article class="feed-card flat">
+          <div class="row between">
+            <div>
+              <strong>{{ oferta.titulo }}</strong>
+              <p class="muted mini">{{ oferta.empresa.nombre }} - {{ oferta.comuna }} - {{ oferta.tipo }}</p>
+            </div>
+            <span class="chip match-chip">{{ match_map[oferta.id] }}% compatible</span>
+          </div>
+        </article>
+      {% else %}
+        <p class="muted">No hay recomendaciones nuevas por ahora.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

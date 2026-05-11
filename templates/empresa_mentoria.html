@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Mentoria empresa - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="row between">
+    <div><p class="eyebrow">Empresa</p><h1>Mentorias activas</h1></div>
+    <a class="btn btn-secondary" href="{{ url_for('empresa_panel') }}">Volver al panel</a>
+  </div>
+
+  <section class="stack">
+    {% for p in postulaciones %}
+      <article class="job-card">
+        <div class="row between">
+          <div>
+            <h2>{{ p.usuario.nombre_completo }}</h2>
+            <p class="muted">{{ p.oferta.titulo }} - {{ p.oferta.mentor_nombre or "Mentor por asignar" }}</p>
+          </div>
+          <span class="chip">{{ p.sesiones_mentoria|length }} sesiones</span>
+        </div>
+
+        <form class="form-card flat" method="post" action="{{ url_for('crear_sesion_mentoria', postulacion_id=p.id) }}">
+          <div class="grid-2">
+            <div class="field"><label>Fecha y hora</label><input type="datetime-local" name="fecha_programada"></div>
+            <div class="field"><label>Objetivo</label><input name="objetivo" required placeholder="Ej: revisar portafolio"></div>
+          </div>
+          <button class="btn btn-primary">Programar sesion</button>
+        </form>
+
+        <div class="stack">
+          {% for s in p.sesiones_mentoria|sort(attribute='fecha_programada') %}
+            <div class="feed-card flat">
+              <strong>{{ s.fecha_programada.strftime('%d-%m-%Y %H:%M') }}</strong>
+              <p class="muted">{{ s.objetivo }}</p>
+              {% if s.avances %}<p class="muted"><strong>Avances:</strong> {{ s.avances }}</p>{% endif %}
+              <form class="form-card flat" method="post" action="{{ url_for('evaluar_sesion_mentoria', sesion_id=s.id) }}">
+                <div class="field"><label>Evaluacion del mentor</label><textarea name="evaluacion">{{ s.evaluacion or "" }}</textarea></div>
+                <div class="field checkbox-field"><label><input type="checkbox" name="completada" value="1" {% if s.completada %}checked{% endif %}> Completada</label></div>
+                <button class="btn btn-secondary">Guardar evaluacion</button>
+              </form>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+    {% else %}
+      <div class="empty-state"><h2>No hay mentorias activas.</h2><p class="muted">Acepta postulaciones en ofertas con mentoria para iniciar el seguimiento.</p></div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

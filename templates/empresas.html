@@ -14,7 +14,11 @@
           <div><h2>{{ empresa.nombre }}</h2><p class="muted mini">{{ empresa.rubro }} · {{ empresa.ubicacion }}</p></div>
         </div>
         <p class="muted">{{ empresa.descripcion }}</p>
-        <span class="chip">{{ empresa.ofertas|length }} ofertas</span>
+        <div class="chips">
+          <span class="chip">{{ empresa.ofertas|length }} ofertas</span>
+          {% if empresa.amigable_tp %}<span class="chip chip-accent">Amigable TP</span>{% endif %}
+        </div>
+        <a class="btn btn-secondary btn-wide" href="{{ url_for('empresa_publica', empresa_id=empresa.id) }}">Ver perfil</a>
       </article>
     {% endfor %}
   </section>

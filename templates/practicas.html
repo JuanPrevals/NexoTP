@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Practicas - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="row between">
+    <div><p class="eyebrow">Practicas</p><h1>Seguimiento profesional</h1></div>
+    <a class="btn btn-secondary" href="{{ url_for('feed') }}">Buscar practicas</a>
+  </div>
+
+  <section class="stack">
+    {% for practica in practicas %}
+      <article class="job-card">
+        <div class="row between">
+          <div>
+            <h2>{{ practica.postulacion.oferta.titulo }}</h2>
+            <p class="muted">{{ practica.postulacion.oferta.empresa.nombre }} - {{ practica.fecha_inicio or "Inicio por definir" }} a {{ practica.fecha_fin or "fin por definir" }}</p>
+          </div>
+          <span class="chip">{{ practica.estado }}</span>
+        </div>
+        <div class="progress"><span style="width: {{ practica.progreso }}%"></span></div>
+        <p class="muted mini">{{ practica.horas_registradas }} de {{ practica.horas_objetivo }} horas registradas - Certificado {{ practica.certificado_codigo }}</p>
+        {% if practica.convenio_digital %}<p class="muted"><strong>Convenio:</strong> {{ practica.convenio_digital }}</p>{% endif %}
+        {% if practica.evaluacion_empresa %}<p class="muted"><strong>Evaluacion empresa:</strong> {{ practica.evaluacion_empresa }}</p>{% endif %}
+
+        <form class="form-card flat" method="post" action="{{ url_for('registrar_seguimiento_practica', practica_id=practica.id) }}">
+          <div class="grid-2">
+            <div class="field"><label>Horas</label><input type="number" name="horas" min="1" required></div>
+            <div class="field"><label>Actividad realizada</label><input name="actividad" required placeholder="Ej: pruebas funcionales"></div>
+          </div>
+          <button class="btn btn-secondary">Registrar avance</button>
+        </form>
+
+        <details class="feed-card flat">
+          <summary>Historial de actividades</summary>
+          <div class="stack" style="margin-top:1rem;">
+            {% for s in practica.seguimientos|sort(attribute='fecha', reverse=True) %}
+              <div class="feed-card flat">
+                <strong>{{ s.horas }} horas - {{ s.fecha.strftime('%d-%m-%Y') }}</strong>
+                <p class="muted">{{ s.actividad }}</p>
+              </div>
+            {% else %}
+              <p class="muted">Aun no hay actividades registradas.</p>
+            {% endfor %}
+          </div>
+        </details>
+      </article>
+    {% else %}
+      <div class="empty-state"><h2>No tienes practicas activas.</h2><p class="muted">Apareceran cuando postules a una oferta de tipo practica.</p></div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

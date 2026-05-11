@@ -9,28 +9,44 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
-<body>
+<body {% if mostrar_onboarding %}data-onboarding-new-user="1"{% endif %}>
   <header class="topbar">
     <a class="brand" href="{{ url_for('index') }}"><span>N</span>{{ app_name }}</a>
     <nav class="nav-links">
       {% if current_user.is_authenticated %}
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
         <a href="{{ url_for('feed') }}">Feed</a>
         <a href="{{ url_for('postulado') }}">Postulado</a>
-        <a href="{{ url_for('red') }}">Red</a>
+        <a href="{{ url_for('practicas') }}">Practicas</a>
+        <a href="{{ url_for('mentoria') }}">Mentoria</a>
+        <a href="{{ url_for('mensajes_usuario') }}">Mensajes</a>
+        <a href="{{ url_for('mapa') }}">Mapa</a>
         <a href="{{ url_for('empresas') }}">Empresas</a>
         <a href="{{ url_for('perfil') }}">Perfil</a>
       {% elif empresa_actual %}
         <a href="{{ url_for('empresa_panel') }}">Panel</a>
         <a href="{{ url_for('nueva_oferta') }}">Publicar</a>
+        <a href="{{ url_for('mensajes_empresa') }}">Mensajes</a>
+        <a href="{{ url_for('empresa_mentoria') }}">Mentoria</a>
+        <a href="{{ url_for('empresa_practicas') }}">Practicas</a>
+      {% elif institucion_actual %}
+        <a href="{{ url_for('institucion_panel') }}">Impacto</a>
       {% else %}
         <a href="{{ url_for('faq') }}">FAQ</a>
         <a href="{{ url_for('empresa_login') }}">Empresas</a>
+        <a href="{{ url_for('institucion_login') }}">Liceo</a>
         <a href="{{ url_for('login') }}">Ingresar</a>
       {% endif %}
     </nav>
     <div class="topbar-actions">
       <button class="icon-btn" type="button" data-theme-toggle title="Cambiar tema">◐</button>
-      {% if current_user.is_authenticated or empresa_actual %}
+      {% if current_user.is_authenticated %}
+        <a class="icon-btn notification-link" href="{{ url_for('notificaciones') }}" title="Notificaciones" aria-label="Notificaciones">
+          <span class="bell-icon" aria-hidden="true">&#128276;</span>
+          <span class="badge" data-notification-badge {% if notificaciones_pendientes == 0 %}hidden{% endif %}>{{ notificaciones_pendientes }}</span>
+        </a>
+        <a class="btn btn-secondary" href="{{ url_for('logout') }}">Salir</a>
+      {% elif empresa_actual or institucion_actual %}
         <a class="btn btn-secondary" href="{{ url_for('logout') }}">Salir</a>
       {% else %}
         <a class="btn btn-primary" href="{{ url_for('registro') }}">Crear perfil</a>
@@ -49,6 +65,27 @@
   {% endwith %}
 
   <main>{% block content %}{% endblock %}</main>
+
+  {% if current_user.is_authenticated and mostrar_onboarding %}
+    <div class="onboarding-overlay" data-onboarding-overlay hidden></div>
+    <section class="onboarding-card" data-onboarding-card hidden aria-live="polite">
+      <div class="onboarding-head">
+        <div>
+          <p class="eyebrow">Guia inicial</p>
+          <h2 data-onboarding-title>Bienvenido a {{ app_name }}</h2>
+        </div>
+        <button class="icon-btn" type="button" data-onboarding-skip title="Saltar guia" aria-label="Saltar guia">x</button>
+      </div>
+      <p class="muted" data-onboarding-copy></p>
+      <div class="onboarding-progress" data-onboarding-progress></div>
+      <div class="onboarding-actions">
+        <button class="btn btn-secondary" type="button" data-onboarding-prev>Anterior</button>
+        <a class="btn btn-secondary" href="#" data-onboarding-link hidden>Ir ahora</a>
+        <button class="btn btn-primary" type="button" data-onboarding-next>Siguiente</button>
+      </div>
+      <button class="btn btn-light btn-wide" type="button" data-onboarding-skip>Saltarlo por ahora</button>
+    </section>
+  {% endif %}
 
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>

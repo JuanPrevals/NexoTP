@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Mensajes - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page messages-page">
+  <div class="row between messages-titlebar">
+    <div>
+      <p class="eyebrow">{% if es_empresa %}Empresa{% else %}Mensajeria{% endif %}</p>
+      <h1>Conversaciones</h1>
+    </div>
+  </div>
+
+  <div class="messages-grid">
+    <aside class="card stack conversations-sidebar">
+      <h2>Postulaciones</h2>
+      {% for p in postulaciones %}
+        <a class="conversation-link {% if seleccionada and seleccionada.id == p.id %}active{% endif %}" href="{% if es_empresa %}{{ url_for('mensajes_empresa', postulacion_id=p.id) }}{% else %}{{ url_for('mensajes_usuario', postulacion_id=p.id) }}{% endif %}">
+          <span class="conversation-avatar">{% if es_empresa %}{{ p.usuario.iniciales }}{% else %}{{ p.oferta.empresa.logo_inicial }}{% endif %}</span>
+          <span class="conversation-copy">
+            <strong>{% if es_empresa %}{{ p.usuario.nombre_completo }}{% else %}{{ p.oferta.empresa.nombre }}{% endif %}</strong>
+            <span>{{ p.oferta.titulo }}</span>
+          </span>
+          <small class="conversation-status {% if p.estado == 'Rechazado' %}danger-text{% endif %}">{{ p.estado }}</small>
+        </a>
+      {% else %}
+        <p class="muted">Aun no hay postulaciones para conversar.</p>
+      {% endfor %}
+    </aside>
+
+    <section
+      class="card messages-panel"
+      {% if seleccionada %}
+        data-conversation-id="{{ seleccionada.id }}"
+        data-own-role="{% if es_empresa %}empresa{% else %}usuario{% endif %}"
+      {% endif %}
+    >
+      {% if seleccionada %}
+        <div class="chat-header row between">
+          <div class="chat-peer">
+            <div class="avatar small-avatar">{% if es_empresa %}{{ seleccionada.usuario.iniciales }}{% else %}{{ seleccionada.oferta.empresa.logo_inicial }}{% endif %}</div>
+            <div>
+            <h2>{{ seleccionada.oferta.titulo }}</h2>
+            <p class="muted mini">{{ seleccionada.usuario.nombre_completo }} - {{ seleccionada.oferta.empresa.nombre }}</p>
+            </div>
+          </div>
+          <span class="chip {% if seleccionada.estado == 'Rechazado' %}chip-danger{% endif %}">{{ seleccionada.estado }}</span>
+        </div>
+        <div class="message-thread" data-message-thread>
+          {% for mensaje in seleccionada.mensajes|sort(attribute='fecha') %}
+            <div class="message-bubble {% if (es_empresa and mensaje.remitente_tipo == 'empresa') or ((not es_empresa) and mensaje.remitente_tipo == 'usuario') %}own{% endif %}">
+              <strong>{% if mensaje.remitente_tipo == 'empresa' %}Empresa{% else %}Egresado{% endif %}</strong>
+              <p>{{ mensaje.contenido }}</p>
+              <span>{{ mensaje.fecha.strftime('%d-%m-%Y %H:%M') }}</span>
+            </div>
+          {% else %}
+            <p class="muted">Esta conversacion todavia no tiene mensajes.</p>
+          {% endfor %}
+        </div>
+        <div class="typing-indicator" data-typing-indicator hidden>
+          <span data-typing-text></span>
+          <span class="typing-dots"><i></i><i></i><i></i></span>
+        </div>
+        {% if seleccionada.estado == "Rechazado" %}
+          <div class="chat-closed">
+            <strong>Conversacion cerrada</strong>
+            <p class="muted">Esta postulacion fue rechazada. Puedes revisar el historial, pero ya no se pueden enviar mensajes.</p>
+          </div>
+        {% else %}
+          <form class="message-composer" method="post" data-message-form action="{% if es_empresa %}{{ url_for('enviar_mensaje_empresa', postulacion_id=seleccionada.id) }}{% else %}{{ url_for('enviar_mensaje_usuario', postulacion_id=seleccionada.id) }}{% endif %}">
+            <textarea name="contenido" data-typing-input required placeholder="Escribe un mensaje"></textarea>
+            <button class="btn btn-primary">Enviar</button>
+          </form>
+        {% endif %}
+      {% else %}
+        <div class="empty-state flat">
+          <h2>Sin conversacion seleccionada.</h2>
+          <p class="muted">Cuando exista una postulacion, podras coordinar entrevistas, documentos y feedback aqui.</p>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

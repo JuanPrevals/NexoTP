@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Notificaciones - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="row between">
+    <div><p class="eyebrow">Campana</p><h1>Notificaciones</h1></div>
+    <form method="post"><button class="btn btn-secondary">Marcar como leido y borrar</button></form>
+  </div>
+
+  <section class="stack" data-notification-list>
+    {% for n in notificaciones %}
+      <article class="feed-card {% if not n.leida %}unread{% endif %}">
+        <div class="row between">
+          <div>
+            <strong>{{ n.titulo }}</strong>
+            <p class="muted">{{ n.contenido }}</p>
+            <p class="muted mini">{{ n.fecha.strftime('%d-%m-%Y %H:%M') }}</p>
+          </div>
+          {% if n.url %}<a class="btn btn-secondary" href="{{ n.url }}">Abrir</a>{% endif %}
+        </div>
+      </article>
+    {% else %}
+      <div class="empty-state">
+        <h2>No tienes notificaciones pendientes.</h2>
+        <p class="muted">Cuando marques una notificacion como leida, desaparecera de esta lista.</p>
+      </div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

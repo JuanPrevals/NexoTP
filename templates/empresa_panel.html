@@ -83,9 +83,18 @@
             <h2>{{ p.oferta.titulo }}</h2>
             <p class="muted">{{ p.usuario.nombre_completo }} · {{ p.usuario.email }}</p>
           </div>
-          <span class="chip">{{ p.estado }}</span>
+          <div class="chips">
+            <span class="chip match-chip">{{ match_map[p.id] }}% match</span>
+            <span class="chip">{{ p.estado }}</span>
+          </div>
         </div>
-        <div class="chips"><span class="chip">{{ p.oferta.especialidad_req }}</span><span class="chip">{{ p.oferta.modalidad }}</span><span class="chip">{{ p.oferta.jornada }}</span></div>
+        <div class="chips">
+          <span class="chip">{{ p.oferta.especialidad_req }}</span>
+          <span class="chip">{{ p.oferta.tipo }}</span>
+          <span class="chip">{{ p.oferta.modalidad }}</span>
+          <span class="chip">{{ p.oferta.jornada }}</span>
+          <span class="chip">{{ cupos_map[p.id] }} cupos disponibles</span>
+        </div>
         <details class="feed-card flat">
           <summary>Ver detalle de postulacion</summary>
           <div class="grid-2" style="margin-top:1rem;">
@@ -96,6 +105,10 @@
               <p class="muted">Ciudad/Pais: {{ p.usuario.comuna }}, {{ p.usuario.pais }}</p>
               <p class="muted">LinkedIn: {{ p.usuario.linkedin or "No informado" }}</p>
               <p class="muted">Portafolio: {{ p.usuario.portafolio or "No informado" }}</p>
+              <div class="row">
+                <a class="btn btn-secondary" href="{{ url_for('perfil_publico', usuario_id=p.usuario.id) }}">Perfil publico</a>
+                <a class="btn btn-secondary" href="{{ url_for('mensajes_empresa', postulacion_id=p.id) }}">Conversar</a>
+              </div>
             </div>
             <div>
               <h3>Perfil</h3>
@@ -121,13 +134,21 @@
           <p class="muted">{{ p.usuario.experiencia_laboral or "Sin experiencia laboral formal informada." }}</p>
           <p class="muted">{{ p.usuario.proyectos or "Sin proyectos informados." }}</p>
           <h3>Resolver postulacion</h3>
-          <form class="form-card flat" method="post" action="{{ url_for('cambiar_estado_postulacion', postulacion_id=p.id) }}">
-            <div class="field"><label>Motivo / comentario para el usuario</label><textarea name="motivo_empresa" placeholder="Ej: Cumple con el perfil, contactaremos por correo.">{{ p.motivo_empresa or "" }}</textarea></div>
-            <div class="row">
-              <button class="btn btn-accent" name="accion" value="aceptar">Aceptar</button>
-              <button class="btn btn-secondary" name="accion" value="rechazar">Rechazar</button>
+          {% if p.estado in estados_finales %}
+            <div class="feed-card flat">
+              <strong>Postulacion ya resuelta: {{ p.estado }}</strong>
+              <p class="muted">{{ p.motivo_empresa or "Sin comentario registrado." }}</p>
+              {% if p.fecha_respuesta %}<p class="muted mini">{{ p.fecha_respuesta.strftime('%d-%m-%Y %H:%M') }}</p>{% endif %}
             </div>
-          </form>
+          {% else %}
+            <form class="form-card flat" method="post" action="{{ url_for('cambiar_estado_postulacion', postulacion_id=p.id) }}">
+              <div class="field"><label>Motivo / comentario para el usuario</label><textarea name="motivo_empresa" placeholder="Ej: Cumple con el perfil, contactaremos por correo.">{{ p.motivo_empresa or "" }}</textarea></div>
+              <div class="row">
+                <button class="btn btn-accent" name="accion" value="aceptar" {% if cupos_map[p.id] <= 0 %}disabled title="No quedan vacantes disponibles"{% endif %}>Aceptar</button>
+                <button class="btn btn-secondary" name="accion" value="rechazar">Rechazar</button>
+              </div>
+            </form>
+          {% endif %}
         </details>
       </article>
     {% else %}
