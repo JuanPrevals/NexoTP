@@ -8,6 +8,7 @@ import math
 import os
 import re
 import smtplib
+import secrets
 import time
 import unicodedata
 
@@ -57,6 +58,18 @@ app.config["SMTP_USER"] = os.environ.get("SMTP_USER", "")
 app.config["SMTP_PASSWORD"] = os.environ.get("SMTP_PASSWORD", "")
 app.config["MAIL_FROM"] = os.environ.get("MAIL_FROM", "noreply@nexotp.local")
 configure_security_headers(app, settings.environment == "production")
+
+
+@app.before_request
+def validate_csrf_token():
+    """Protege todas las operaciones que modifican estado."""
+    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return None
+    expected = session.get("csrf_token")
+    supplied = request.headers.get("X-CSRF-Token") or request.form.get("_csrf_token")
+    if not expected or not supplied or not secrets.compare_digest(expected, supplied):
+        return jsonify({"ok": False, "message": "Solicitud no valida. Recarga la pagina."}), 400
+    return None
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -1024,16 +1037,18 @@ def init_database():
     try:
         db.create_all()
         ensure_schema_columns()
-        seed_data()
+        if settings.seed_demo_data:
+            seed_data()
     except OperationalError:
         db.session.rollback()
-        db.drop_all()
-        db.create_all()
-        seed_data()
+        # Nunca reconstruir automaticamente una base con datos existentes.
+        raise
 
 
 @app.context_processor
 def inject_globals():
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_urlsafe(32)
     unread = 0
     mostrar_onboarding = False
     if current_user.is_authenticated:
@@ -1041,6 +1056,7 @@ def inject_globals():
         mostrar_onboarding = session.pop("show_onboarding", False)
     return {
         "app_name": APP_NAME,
+        "csrf_token": session["csrf_token"],
         "especialidades": ESPECIALIDADES,
         "comunas": COMUNAS,
         "modalidades": MODALIDADES,
@@ -1146,8 +1162,8 @@ def registro():
         if not all([usuario.nombre, usuario.apellido, usuario.email, usuario.especialidad, usuario.comuna, password]):
             flash("Completa los campos obligatorios.", "error")
             return redirect(url_for("registro"))
-        if len(password) < 6:
-            flash("La contrasena debe tener al menos 6 caracteres.", "error")
+        if len(password) < 10:
+            flash("La contrasena debe tener al menos 10 caracteres.", "error")
             return redirect(url_for("registro"))
         usuario.set_password(password)
         try:
@@ -1784,6 +1800,9 @@ def empresa_registro():
         password = request.form.get("password", "")
         if not all([empresa.nombre, empresa.email, empresa.rubro, empresa.descripcion, empresa.ubicacion, password]):
             flash("Completa los campos obligatorios.", "error")
+            return redirect(url_for("empresa_registro"))
+        if len(password) < 10:
+            flash("La contrasena debe tener al menos 10 caracteres.", "error")
             return redirect(url_for("empresa_registro"))
         empresa.set_password(password)
         try:
@@ -2499,6 +2518,7 @@ def mapa():
 
 
 @app.route("/api/stats")
+@admin_required
 def api_stats():
     return jsonify(
         {

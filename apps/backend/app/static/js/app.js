@@ -1,5 +1,15 @@
 const savedTheme = localStorage.getItem("theme") || "light";
 document.documentElement.dataset.theme = savedTheme;
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+
+document.querySelectorAll('form[method="post"], form[method="POST"]').forEach((form) => {
+  if (form.querySelector('input[name="_csrf_token"]')) return;
+  const input = document.createElement("input");
+  input.type = "hidden";
+  input.name = "_csrf_token";
+  input.value = csrfToken;
+  form.append(input);
+});
 
 document.addEventListener("click", async (event) => {
   const themeButton = event.target.closest("[data-theme-toggle]");
@@ -20,7 +30,7 @@ document.addEventListener("click", async (event) => {
   try {
     const response = await fetch(`/postular/${applyButton.dataset.apply}`, {
       method: "POST",
-      headers: { "X-Requested-With": "fetch" },
+      headers: { "X-Requested-With": "fetch", "X-CSRF-Token": csrfToken },
     });
     const data = await response.json();
     applyButton.textContent = data.ok ? "Postulado" : data.message || "No enviado";
@@ -323,7 +333,7 @@ document.addEventListener("input", (event) => {
   lastTypingSentAt = now;
   fetch(`/api/typing/${messagesPanel.dataset.conversationId}`, {
     method: "POST",
-    headers: { "X-Requested-With": "fetch" },
+    headers: { "X-Requested-With": "fetch", "X-CSRF-Token": csrfToken },
   }).catch(() => {});
 });
 
@@ -339,7 +349,7 @@ document.addEventListener("submit", async (event) => {
     const response = await fetch(form.action, {
       method: "POST",
       body: new FormData(form),
-      headers: { "X-Requested-With": "fetch" },
+      headers: { "X-Requested-With": "fetch", "X-CSRF-Token": csrfToken },
     });
     const data = await response.json().catch(() => ({}));
     if (response.ok && data.ok !== false) {
@@ -361,8 +371,8 @@ startOnboarding();
 refreshConversation(true);
 if (messagesPanel) {
   setInterval(() => {
-    refreshConversation(!realtimeConnected);
-  }, 1500);
+    if (!realtimeConnected) refreshConversation(true);
+  }, 5000);
 }
 
 if (window.NexoMapData && window.L) {

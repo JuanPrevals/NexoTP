@@ -24,6 +24,7 @@ class Settings:
     database_url: str
     allowed_origins: tuple[str, ...]
     secure_cookies: bool
+    seed_demo_data: bool
 
 
 def load_settings() -> Settings:
@@ -44,6 +45,7 @@ def load_settings() -> Settings:
         database_url=os.environ.get("DATABASE_URL", f"sqlite:///{DEFAULT_DATABASE}"),
         allowed_origins=_origins(),
         secure_cookies=production,
+        seed_demo_data=os.environ.get("SEED_DEMO_DATA", "0") == "1",
     )
 
 
