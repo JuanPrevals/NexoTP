@@ -12,6 +12,10 @@
       <div>
         <h2>{{ usuario.nombre_completo }}</h2>
         <p class="muted">{{ usuario.especialidad }} - {{ usuario.comuna }}, {{ usuario.pais }}</p>
+        <div class="chips">
+          {% if usuario.email_verificado %}<span class="chip">Correo verificado</span>{% endif %}
+          {% if usuario.identidad_verificada and not usuario.suspendido %}<span class="chip chip-accent">Identidad verificada</span>{% endif %}
+        </div>
       </div>
     </div>
     <p>{{ usuario.perfil_profesional or usuario.sobre_mi or "Perfil profesional en construccion." }}</p>
@@ -20,6 +24,16 @@
         <span class="chip">{{ habilidad }}</span>
       {% endfor %}
     </div>
+    {% if current_user.is_authenticated or empresa_actual %}
+      <details class="report-box">
+        <summary>Reportar perfil</summary>
+        <form class="form-card flat" method="post" action="{{ url_for('reportar', objetivo_tipo='usuario', objetivo_id=usuario.id) }}">
+          <div class="field"><label>Motivo</label><select name="motivo" required><option value="">Selecciona</option><option>Suplantacion</option><option>Estafa</option><option>Oferta enganosa</option><option>Acoso</option><option>Spam</option><option>Otro</option></select></div>
+          <div class="field"><label>Que ocurrio</label><textarea name="detalle" minlength="20" maxlength="1000" required></textarea></div>
+          <button class="btn btn-secondary">Enviar reporte</button>
+        </form>
+      </details>
+    {% endif %}
   </aside>
 
   <section class="stack">

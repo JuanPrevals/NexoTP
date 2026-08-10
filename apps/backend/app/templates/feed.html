@@ -69,7 +69,7 @@
             <div class="logo" style="--logo: {{ oferta.empresa.color }}">{{ oferta.empresa.logo_inicial }}</div>
             <div class="feed-job-title">
               <div class="row between">
-                <strong><a href="{{ url_for('empresa_publica', empresa_id=oferta.empresa.id) }}">{{ oferta.empresa.nombre }}</a></strong>
+                <strong><a href="{{ url_for('empresa_publica', empresa_id=oferta.empresa.id) }}">{{ oferta.empresa.nombre }}</a>{% if oferta.empresa.estado_verificacion == 'Aprobada' and not oferta.empresa.suspendida %} <span class="chip chip-accent">Verificada</span>{% endif %}</strong>
                 <span class="muted mini">{{ oferta.fecha_publicacion.strftime('%d-%m-%Y') }}</span>
               </div>
               <h2>{{ oferta.titulo }}</h2>
@@ -118,11 +118,14 @@
 
           <div class="card-actions feed-job-actions">
             <span class="muted">{{ oferta.sueldo or "Renta a convenir" }}</span>
-            {% if oferta.id in mis_postulaciones %}
-              <button class="btn btn-secondary" disabled>Postulado</button>
-            {% else %}
-              <button class="btn btn-primary" data-apply="{{ oferta.id }}">Postular</button>
-            {% endif %}
+            <div class="row">
+              <details class="report-box"><summary>Reportar</summary><form class="form-card flat" method="post" action="{{ url_for('reportar', objetivo_tipo='oferta', objetivo_id=oferta.id) }}"><div class="field"><label>Motivo</label><select name="motivo" required><option>Oferta enganosa</option><option>Estafa</option><option>Suplantacion</option><option>Spam</option><option>Otro</option></select></div><div class="field"><label>Detalle</label><textarea name="detalle" minlength="20" maxlength="1000" required></textarea></div><button class="btn btn-secondary">Enviar</button></form></details>
+              {% if oferta.id in mis_postulaciones %}
+                <button class="btn btn-secondary" disabled>Postulado</button>
+              {% else %}
+                <button class="btn btn-primary" data-apply="{{ oferta.id }}" {% if not current_user.email_verificado %}disabled title="Verifica tu correo para postular"{% endif %}>Postular</button>
+              {% endif %}
+            </div>
           </div>
         </article>
       {% else %}

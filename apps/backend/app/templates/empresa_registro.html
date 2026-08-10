@@ -3,10 +3,19 @@
 {% block content %}
 <section class="auth">
   <div class="card"><p class="eyebrow">Empresa</p><h1>Crear cuenta</h1><p class="muted">Las ofertas publicadas quedan visibles para todos los egresados.</p></div>
-  <form class="form-card" method="post">
+  <form class="form-card" method="post" data-sii-form>
     <div class="grid-2">
       <div class="field"><label>Nombre</label><input name="nombre" required></div>
       <div class="field"><label>Rubro</label><input name="rubro" required></div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Razon social</label><input name="razon_social" readonly required></div>
+      <div class="field"><label>RUT empresa</label><input name="rut" placeholder="76.123.456-7" data-rut-input required><button class="btn btn-secondary" type="button" data-sii-lookup>Consultar SII</button></div>
+    </div>
+    <p class="muted mini" data-sii-status aria-live="polite">Consulta el RUT para comprobar que la empresa existe y completar su razon social.</p>
+    <div class="grid-2">
+      <div class="field"><label>Responsable</label><input name="responsable_nombre" autocomplete="name" required></div>
+      <div class="field"><label>Cargo del responsable</label><input name="responsable_cargo" required></div>
     </div>
     <div class="grid-2">
       <div class="field"><label>Correo</label><input name="email" type="email" required></div>
@@ -18,7 +27,8 @@
     <div class="field"><label>Foto o imagen corporativa URL</label><input name="foto_url" placeholder="https://..."></div>
     <div class="field checkbox-field"><label><input type="checkbox" name="amigable_tp" value="1" checked> Amigable con egresados TP</label></div>
     <div class="field"><label>Descripcion</label><textarea name="descripcion" required></textarea></div>
-    <button class="btn btn-primary btn-wide">Crear empresa</button>
+    <p class="muted mini">La consulta se limita a personas juridicas. Estos datos se usan solo para revision antifraude; el RUT y los datos del responsable no se publican.</p>
+    <button class="btn btn-primary btn-wide">Crear empresa y solicitar revision</button>
   </form>
 </section>
 {% endblock %}

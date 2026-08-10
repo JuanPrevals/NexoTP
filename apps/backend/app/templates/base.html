@@ -65,6 +65,18 @@
     {% endif %}
   {% endwith %}
 
+  {% if current_user.is_authenticated and not current_user.email_verificado %}
+    <div class="page verification-notice" role="status">
+      <div><strong>Correo pendiente de verificacion</strong><p class="muted mini">Verificalo para postular y enviar mensajes.</p></div>
+      <form method="post" action="{{ url_for('reenviar_verificacion') }}"><button class="btn btn-secondary">Reenviar enlace</button></form>
+    </div>
+  {% elif empresa_actual and not empresa_actual.email_verificado %}
+    <div class="page verification-notice" role="status">
+      <div><strong>Correo empresarial pendiente</strong><p class="muted mini">Debes verificarlo antes de solicitar la aprobacion.</p></div>
+      <form method="post" action="{{ url_for('reenviar_verificacion') }}"><button class="btn btn-secondary">Reenviar enlace</button></form>
+    </div>
+  {% endif %}
+
   <main>{% block content %}{% endblock %}</main>
 
   {% if current_user.is_authenticated and mostrar_onboarding %}

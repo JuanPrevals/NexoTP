@@ -285,6 +285,21 @@ img.avatar { object-fit: cover; display: block; }
 }
 .feed-card.unread { border-color: var(--accent); }
 
+.verification-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: .9rem 1rem;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.verification-notice p { margin: .2rem 0 0; }
+.report-box { margin-top: 1rem; }
+.report-box .form-card { margin-top: .8rem; }
+
 .bar-list { display: grid; gap: .8rem; }
 .bar-row { display: grid; grid-template-columns: 92px 1fr 44px; gap: .65rem; align-items: center; }
 .bar-track, .progress {

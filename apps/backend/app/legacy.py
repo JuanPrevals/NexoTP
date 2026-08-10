@@ -3,6 +3,7 @@ from email.message import EmailMessage
 from functools import wraps
 from io import BytesIO, StringIO
 import csv
+import hashlib
 import json
 import math
 import os
@@ -39,6 +40,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from .core.config import settings
 from .core.security import configure_security_headers
+from .services.sii import SIIInvalidRUT, SIINotFound, SIIUnavailable, lookup_company
 
 
 APP_NAME = "NexoTP"
@@ -69,6 +71,15 @@ def validate_csrf_token():
     supplied = request.headers.get("X-CSRF-Token") or request.form.get("_csrf_token")
     if not expected or not supplied or not secrets.compare_digest(expected, supplied):
         return jsonify({"ok": False, "message": "Solicitud no valida. Recarga la pagina."}), 400
+    return None
+
+
+@app.before_request
+def reject_suspended_session():
+    if current_user.is_authenticated and current_user.suspendido:
+        logout_user()
+        flash("Esta cuenta se encuentra suspendida. Contacta al administrador.", "error")
+        return redirect(url_for("login"))
     return None
 
 db = SQLAlchemy(app)
@@ -114,6 +125,9 @@ class Usuario(UserMixin, db.Model):
     portafolio = db.Column(db.String(255))
     linkedin = db.Column(db.String(255))
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    email_verificado = db.Column(db.Boolean, default=False, nullable=False)
+    identidad_verificada = db.Column(db.Boolean, default=False, nullable=False)
+    suspendido = db.Column(db.Boolean, default=False, nullable=False)
 
     postulaciones = db.relationship(
         "Postulacion", backref="usuario", cascade="all, delete-orphan", lazy=True
@@ -153,6 +167,18 @@ class Empresa(db.Model):
     color = db.Column(db.String(20), default="#1f2937")
     amigable_tp = db.Column(db.Boolean, default=True)
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    rut = db.Column(db.String(20), index=True)
+    razon_social = db.Column(db.String(180))
+    responsable_nombre = db.Column(db.String(150))
+    responsable_cargo = db.Column(db.String(120))
+    email_verificado = db.Column(db.Boolean, default=False, nullable=False)
+    estado_verificacion = db.Column(db.String(30), default="Pendiente", nullable=False)
+    motivo_verificacion = db.Column(db.String(320))
+    suspendida = db.Column(db.Boolean, default=False, nullable=False)
+    sii_verificado = db.Column(db.Boolean, default=False, nullable=False)
+    sii_razon_social = db.Column(db.String(180))
+    sii_actividad = db.Column(db.String(180))
+    sii_fecha_consulta = db.Column(db.DateTime)
 
     ofertas = db.relationship(
         "Oferta", backref="empresa", cascade="all, delete-orphan", lazy=True
@@ -365,6 +391,39 @@ class SeguimientoPractica(db.Model):
     )
 
 
+class TokenVerificacion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    actor_tipo = db.Column(db.String(20), nullable=False, index=True)
+    actor_id = db.Column(db.Integer, nullable=False, index=True)
+    token_hash = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    expira = db.Column(db.DateTime, nullable=False)
+    usado = db.Column(db.Boolean, default=False, nullable=False)
+    creado = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ReporteSeguridad(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    reportante_tipo = db.Column(db.String(20), nullable=False)
+    reportante_id = db.Column(db.Integer, nullable=False)
+    objetivo_tipo = db.Column(db.String(20), nullable=False, index=True)
+    objetivo_id = db.Column(db.Integer, nullable=False, index=True)
+    motivo = db.Column(db.String(80), nullable=False)
+    detalle = db.Column(db.Text, nullable=False)
+    estado = db.Column(db.String(30), default="Pendiente", nullable=False, index=True)
+    resolucion = db.Column(db.Text)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    fecha_resolucion = db.Column(db.DateTime)
+
+
+class AuditoriaSeguridad(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    accion = db.Column(db.String(80), nullable=False, index=True)
+    objetivo_tipo = db.Column(db.String(20), nullable=False)
+    objetivo_id = db.Column(db.Integer, nullable=False)
+    detalle = db.Column(db.String(500))
+    fecha = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(Usuario, int(user_id))
@@ -406,6 +465,15 @@ REALTIME_INTERVAL_SECONDS = 1
 TYPING_STATE = {}
 
 
+def ofertas_publicas_query():
+    return Oferta.query.join(Empresa).filter(
+        Oferta.activa.is_(True),
+        Empresa.email_verificado.is_(True),
+        Empresa.estado_verificacion == "Aprobada",
+        Empresa.suspendida.is_(False),
+    )
+
+
 def current_empresa():
     empresa_id = session.get("empresa_id")
     if not empresa_id:
@@ -435,8 +503,13 @@ def realtime_identity():
 def empresa_required(view):
     @wraps(view)
     def wrapper(*args, **kwargs):
-        if not current_empresa():
+        empresa = current_empresa()
+        if not empresa:
             flash("Ingresa como empresa.", "info")
+            return redirect(url_for("empresa_login"))
+        if empresa.suspendida:
+            session.pop("empresa_id", None)
+            flash("Esta cuenta se encuentra suspendida. Contacta al administrador.", "error")
             return redirect(url_for("empresa_login"))
         return view(*args, **kwargs)
     return wrapper
@@ -552,13 +625,13 @@ def distancia_km(origen, destino):
     return 2 * radio_tierra * math.asin(math.sqrt(a))
 
 
-def enviar_email(usuario, asunto, contenido):
-    if not app.config["SMTP_HOST"] or not usuario.email:
-        return
+def enviar_email_a(destinatario, asunto, contenido):
+    if not app.config["SMTP_HOST"] or not destinatario:
+        return False
     mensaje = EmailMessage()
     mensaje["Subject"] = asunto
     mensaje["From"] = app.config["MAIL_FROM"]
-    mensaje["To"] = usuario.email
+    mensaje["To"] = destinatario
     mensaje.set_content(contenido)
     try:
         with smtplib.SMTP(app.config["SMTP_HOST"], app.config["SMTP_PORT"], timeout=8) as smtp:
@@ -566,8 +639,81 @@ def enviar_email(usuario, asunto, contenido):
             if app.config["SMTP_USER"]:
                 smtp.login(app.config["SMTP_USER"], app.config["SMTP_PASSWORD"])
             smtp.send_message(mensaje)
-    except OSError:
-        app.logger.info("No se pudo enviar email a %s", usuario.email)
+        return True
+    except (OSError, smtplib.SMTPException):
+        app.logger.warning("No se pudo enviar un email de sistema.")
+        return False
+
+
+def enviar_email(usuario, asunto, contenido):
+    return enviar_email_a(usuario.email, asunto, contenido)
+
+
+def normalizar_rut(valor):
+    return re.sub(r"[^0-9kK]", "", valor or "").upper()
+
+
+def rut_chileno_valido(valor):
+    rut = normalizar_rut(valor)
+    if len(rut) < 8 or not rut[:-1].isdigit():
+        return False
+    total = 0
+    factor = 2
+    for digito in reversed(rut[:-1]):
+        total += int(digito) * factor
+        factor = 2 if factor == 7 else factor + 1
+    resto = 11 - (total % 11)
+    verificador = "0" if resto == 11 else "K" if resto == 10 else str(resto)
+    return rut[-1] == verificador
+
+
+def crear_token_verificacion(actor_tipo, actor_id):
+    TokenVerificacion.query.filter_by(
+        actor_tipo=actor_tipo, actor_id=actor_id, usado=False
+    ).update({"usado": True})
+    token = secrets.token_urlsafe(32)
+    db.session.add(
+        TokenVerificacion(
+            actor_tipo=actor_tipo,
+            actor_id=actor_id,
+            token_hash=hashlib.sha256(token.encode()).hexdigest(),
+            expira=datetime.utcnow() + timedelta(hours=24),
+        )
+    )
+    return token
+
+
+def enviar_verificacion_email(actor_tipo, actor):
+    token = crear_token_verificacion(actor_tipo, actor.id)
+    enlace = f"{settings.public_origin}/verificar-email/{token}"
+    enviado = enviar_email_a(
+        actor.email,
+        "Verifica tu correo en NexoTP",
+        f"Confirma tu correo abriendo este enlace. Vence en 24 horas:\n\n{enlace}\n\nSi no creaste esta cuenta, ignora este mensaje.",
+    )
+    return enviado
+
+
+def registrar_auditoria(accion, objetivo_tipo, objetivo_id, detalle=""):
+    db.session.add(
+        AuditoriaSeguridad(
+            accion=accion,
+            objetivo_tipo=objetivo_tipo,
+            objetivo_id=objetivo_id,
+            detalle=(detalle or "")[:500],
+        )
+    )
+
+
+def comprobante_sii_para(rut):
+    proof = session.get("sii_company_proof") or {}
+    if (
+        proof.get("rut") == normalizar_rut(rut)
+        and float(proof.get("expira", 0)) > time.time()
+        and proof.get("razon_social")
+    ):
+        return proof
+    return None
 
 
 def add_notificacion(usuario, tipo, titulo, contenido, url=None, email=False):
@@ -961,9 +1107,26 @@ def seed_data():
 
 
 COLUMN_MIGRATIONS = {
+    "usuario": {
+        "email_verificado": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "identidad_verificada": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "suspendido": "BOOLEAN NOT NULL DEFAULT FALSE",
+    },
     "empresa": {
         "foto_url": "VARCHAR(255)",
         "amigable_tp": "BOOLEAN DEFAULT 1",
+        "rut": "VARCHAR(20)",
+        "razon_social": "VARCHAR(180)",
+        "responsable_nombre": "VARCHAR(150)",
+        "responsable_cargo": "VARCHAR(120)",
+        "email_verificado": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "estado_verificacion": "VARCHAR(30) NOT NULL DEFAULT 'Pendiente'",
+        "motivo_verificacion": "VARCHAR(320)",
+        "suspendida": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "sii_verificado": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "sii_razon_social": "VARCHAR(180)",
+        "sii_actividad": "VARCHAR(180)",
+        "sii_fecha_consulta": "TIMESTAMP",
     },
     "oferta": {
         "tipo": "VARCHAR(40) DEFAULT 'Empleo'",
@@ -1074,11 +1237,11 @@ def index():
     if current_user.is_authenticated:
         return redirect(url_for("feed"))
     stats = {
-        "empresas": Empresa.query.count(),
-        "ofertas": Oferta.query.filter_by(activa=True).count(),
+        "empresas": Empresa.query.filter_by(estado_verificacion="Aprobada", suspendida=False).count(),
+        "ofertas": ofertas_publicas_query().count(),
         "egresados": Usuario.query.count(),
     }
-    ofertas = Oferta.query.filter_by(activa=True).order_by(Oferta.fecha_publicacion.desc()).limit(3)
+    ofertas = ofertas_publicas_query().order_by(Oferta.fecha_publicacion.desc()).limit(3)
     novedades = Novedad.query.order_by(Novedad.fecha.desc()).limit(4)
     return render_template("index.html", stats=stats, ofertas=ofertas, novedades=novedades)
 
@@ -1100,7 +1263,7 @@ def dashboard():
         semanas.append({"label": inicio.strftime("%d-%m"), "total": total})
 
     ids_postuladas = {p.oferta_id for p in postulaciones}
-    ofertas_base = Oferta.query.filter_by(activa=True).all()
+    ofertas_base = ofertas_publicas_query().all()
     recomendadas = [
         oferta for oferta in ofertas_ordenadas_para(current_user, ofertas_base)
         if oferta.id not in ids_postuladas
@@ -1170,6 +1333,7 @@ def registro():
             db.session.add(usuario)
             db.session.flush()
             add_novedad("perfil", "Nuevo perfil TP", f"{usuario.nombre_completo} se unio a la red.", usuario=usuario)
+            email_enviado = enviar_verificacion_email("usuario", usuario)
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
@@ -1177,6 +1341,12 @@ def registro():
             return redirect(url_for("registro"))
         login_user(usuario)
         session["show_onboarding"] = True
+        flash(
+            "Te enviamos un enlace para verificar tu correo. Revisa tambien spam."
+            if email_enviado
+            else "Cuenta creada. El envio de correo aun no esta configurado; podras reenviarlo cuando SMTP este disponible.",
+            "success" if email_enviado else "info",
+        )
         return redirect(url_for("feed"))
     return render_template("registro.html")
 
@@ -1187,12 +1357,104 @@ def login():
         return redirect(url_for("feed"))
     if request.method == "POST":
         usuario = Usuario.query.filter_by(email=request.form.get("email", "").strip().lower()).first()
-        if usuario and usuario.check_password(request.form.get("password", "")):
+        if usuario and usuario.check_password(request.form.get("password", "")) and not usuario.suspendido:
             session.pop("empresa_id", None)
             login_user(usuario)
             return redirect(url_for("feed"))
         flash("Correo o contrasena incorrectos.", "error")
     return render_template("login.html")
+
+
+@app.route("/verificar-email/<token>")
+def verificar_email(token):
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    registro = TokenVerificacion.query.filter_by(token_hash=token_hash, usado=False).first()
+    if not registro or registro.expira < datetime.utcnow():
+        flash("El enlace de verificacion no es valido o ya vencio.", "error")
+        return redirect(url_for("index"))
+    actor = (
+        db.session.get(Usuario, registro.actor_id)
+        if registro.actor_tipo == "usuario"
+        else db.session.get(Empresa, registro.actor_id)
+    )
+    if not actor:
+        flash("La cuenta ya no existe.", "error")
+        return redirect(url_for("index"))
+    actor.email_verificado = True
+    registro.usado = True
+    registrar_auditoria("correo_verificado", registro.actor_tipo, actor.id)
+    db.session.commit()
+    flash("Correo verificado correctamente.", "success")
+    return redirect(url_for("empresa_panel" if registro.actor_tipo == "empresa" else "feed"))
+
+
+@app.route("/verificacion/reenviar", methods=["POST"])
+def reenviar_verificacion():
+    if current_user.is_authenticated:
+        actor_tipo, actor = "usuario", current_user
+        destino = "feed"
+    else:
+        actor = current_empresa()
+        actor_tipo, destino = "empresa", "empresa_panel"
+    if not actor:
+        return redirect(url_for("index"))
+    if actor.email_verificado:
+        flash("Tu correo ya esta verificado.", "info")
+        return redirect(url_for(destino))
+    ultimo = TokenVerificacion.query.filter_by(actor_tipo=actor_tipo, actor_id=actor.id).order_by(
+        TokenVerificacion.creado.desc()
+    ).first()
+    if ultimo and ultimo.creado > datetime.utcnow() - timedelta(minutes=2):
+        flash("Espera dos minutos antes de solicitar otro enlace.", "info")
+        return redirect(url_for(destino))
+    enviado = enviar_verificacion_email(actor_tipo, actor)
+    db.session.commit()
+    flash(
+        "Nuevo enlace enviado. Revisa tambien spam."
+        if enviado
+        else "No se pudo enviar el correo. Revisa la configuracion SMTP.",
+        "success" if enviado else "error",
+    )
+    return redirect(url_for(destino))
+
+
+@app.route("/api/verificar-rut-empresa", methods=["POST"])
+def api_verificar_rut_empresa():
+    ahora = time.time()
+    intentos = [value for value in session.get("sii_lookup_times", []) if value > ahora - 600]
+    if len(intentos) >= 5:
+        return jsonify({"ok": False, "message": "Limite alcanzado. Intenta nuevamente en unos minutos."}), 429
+    intentos.append(ahora)
+    session["sii_lookup_times"] = intentos
+    payload = request.get_json(silent=True) or request.form
+    rut = normalizar_rut(payload.get("rut", ""))
+    try:
+        result = lookup_company(rut)
+    except SIIInvalidRUT:
+        return jsonify({"ok": False, "message": "Ingresa un RUT valido de persona juridica."}), 400
+    except SIINotFound:
+        return jsonify({"ok": False, "message": "El SII no encontro antecedentes para ese RUT."}), 404
+    except SIIUnavailable:
+        return jsonify({"ok": False, "message": "El SII no esta disponible temporalmente. Intenta mas tarde."}), 503
+    primary_activity = result.actividades[0]["giro"] if result.actividades else ""
+    session["sii_company_proof"] = {
+        "rut": normalizar_rut(result.rut),
+        "razon_social": result.razon_social,
+        "actividad": primary_activity,
+        "inicio_actividades": result.inicio_actividades,
+        "expira": ahora + 1800,
+    }
+    return jsonify(
+        {
+            "ok": True,
+            "rut": result.rut,
+            "razon_social": result.razon_social,
+            "actividad": primary_activity,
+            "actividades": list(result.actividades[:5]),
+            "inicio_actividades": result.inicio_actividades,
+            "message": "RUT encontrado en el SII.",
+        }
+    )
 
 
 @app.route("/logout")
@@ -1207,17 +1469,17 @@ def logout():
 @app.route("/feed")
 @login_required
 def feed():
-    query = Oferta.query.filter_by(activa=True)
+    query = ofertas_publicas_query()
     especialidad = request.args.get("especialidad", "")
     modalidad = request.args.get("modalidad", "")
     comuna = request.args.get("comuna", "")
     busqueda = request.args.get("q", "").strip()
     if especialidad:
-        query = query.filter_by(especialidad_req=especialidad)
+        query = query.filter(Oferta.especialidad_req == especialidad)
     if modalidad:
-        query = query.filter_by(modalidad=modalidad)
+        query = query.filter(Oferta.modalidad == modalidad)
     if comuna:
-        query = query.filter_by(comuna=comuna)
+        query = query.filter(Oferta.comuna == comuna)
     if busqueda:
         like = f"%{busqueda}%"
         query = query.filter(or_(Oferta.titulo.ilike(like), Oferta.descripcion.ilike(like), Oferta.requisitos.ilike(like)))
@@ -1243,8 +1505,20 @@ def feed():
 @app.route("/postular/<int:oferta_id>", methods=["POST"])
 @login_required
 def postular(oferta_id):
+    if not current_user.email_verificado or current_user.suspendido:
+        return respuesta_json_si_fetch(
+            {"ok": False, "message": "Verifica tu correo antes de postular."},
+            url_for("feed"),
+            status=403,
+        )
     oferta = db.session.get(Oferta, oferta_id)
-    if not oferta or not oferta.activa:
+    if (
+        not oferta
+        or not oferta.activa
+        or not oferta.empresa.email_verificado
+        or oferta.empresa.estado_verificacion != "Aprobada"
+        or oferta.empresa.suspendida
+    ):
         return jsonify({"ok": False, "message": "Oferta no disponible."}), 404
     if Postulacion.query.filter_by(usuario_id=current_user.id, oferta_id=oferta_id).first():
         return jsonify({"ok": False, "message": "Ya postulaste."}), 409
@@ -1399,7 +1673,7 @@ def descargar_cv():
 @app.route("/u/<int:usuario_id>")
 def perfil_publico(usuario_id):
     usuario = db.session.get(Usuario, usuario_id)
-    if not usuario:
+    if not usuario or usuario.suspendido:
         return render_template("404.html"), 404
     postulaciones_aceptadas = Postulacion.query.filter_by(usuario_id=usuario.id, estado="Aceptado").all()
     return render_template("perfil_publico.html", usuario=usuario, postulaciones_aceptadas=postulaciones_aceptadas)
@@ -1553,6 +1827,12 @@ def mensajes_usuario():
 @app.route("/mensajes/<int:postulacion_id>", methods=["POST"])
 @login_required
 def enviar_mensaje_usuario(postulacion_id):
+    if not current_user.email_verificado:
+        return respuesta_json_si_fetch(
+            {"ok": False, "message": "Verifica tu correo antes de enviar mensajes."},
+            url_for("mensajes_usuario"),
+            status=403,
+        )
     postulacion = postulacion_mensajes_autorizada(postulacion_id)
     if not postulacion:
         flash("Conversacion no disponible.", "error")
@@ -1611,6 +1891,12 @@ def mensajes_empresa():
 @empresa_required
 def enviar_mensaje_empresa(postulacion_id):
     empresa = current_empresa()
+    if not empresa.email_verificado or empresa.estado_verificacion != "Aprobada":
+        return respuesta_json_si_fetch(
+            {"ok": False, "message": "La empresa debe estar verificada para enviar mensajes."},
+            url_for("mensajes_empresa"),
+            status=403,
+        )
     postulacion = postulacion_mensajes_autorizada(postulacion_id, empresa)
     if not postulacion:
         flash("Conversacion no disponible.", "error")
@@ -1719,13 +2005,16 @@ def conectar(usuario_id):
 @app.route("/empresas")
 @login_required
 def empresas():
-    return render_template("empresas.html", empresas=Empresa.query.order_by(Empresa.nombre.asc()).all())
+    empresas_verificadas = Empresa.query.filter_by(
+        estado_verificacion="Aprobada", suspendida=False
+    ).order_by(Empresa.nombre.asc()).all()
+    return render_template("empresas.html", empresas=empresas_verificadas)
 
 
 @app.route("/empresa/<int:empresa_id>", methods=["GET", "POST"])
 def empresa_publica(empresa_id):
     empresa = db.session.get(Empresa, empresa_id)
-    if not empresa:
+    if not empresa or empresa.suspendida:
         return render_template("404.html"), 404
     puede_dejar_resena = current_user.is_authenticated and puede_resenar(current_user, empresa)
     if request.method == "POST":
@@ -1772,7 +2061,7 @@ def empresa_publica(empresa_id):
 def empresa_login():
     if request.method == "POST":
         empresa = Empresa.query.filter_by(email=request.form.get("email", "").strip().lower()).first()
-        if empresa and empresa.check_password(request.form.get("password", "")):
+        if empresa and empresa.check_password(request.form.get("password", "")) and not empresa.suspendida:
             logout_user()
             session.pop("institucion_id", None)
             session.pop("admin_ok", None)
@@ -1796,11 +2085,41 @@ def empresa_registro():
             foto_url=request.form.get("foto_url", "").strip(),
             amigable_tp=request.form.get("amigable_tp") == "1",
             logo_inicial=request.form.get("nombre", "EM")[:2].upper(),
+            rut=normalizar_rut(request.form.get("rut", "")),
+            razon_social=request.form.get("razon_social", "").strip(),
+            responsable_nombre=request.form.get("responsable_nombre", "").strip(),
+            responsable_cargo=request.form.get("responsable_cargo", "").strip(),
         )
         password = request.form.get("password", "")
-        if not all([empresa.nombre, empresa.email, empresa.rubro, empresa.descripcion, empresa.ubicacion, password]):
+        if not all([
+            empresa.nombre,
+            empresa.razon_social,
+            empresa.rut,
+            empresa.responsable_nombre,
+            empresa.responsable_cargo,
+            empresa.email,
+            empresa.rubro,
+            empresa.descripcion,
+            empresa.ubicacion,
+            password,
+        ]):
             flash("Completa los campos obligatorios.", "error")
             return redirect(url_for("empresa_registro"))
+        if not rut_chileno_valido(empresa.rut):
+            flash("Ingresa un RUT chileno valido.", "error")
+            return redirect(url_for("empresa_registro"))
+        sii_proof = comprobante_sii_para(empresa.rut)
+        if not sii_proof:
+            flash("Verifica el RUT con el SII antes de crear la empresa.", "error")
+            return redirect(url_for("empresa_registro"))
+        if Empresa.query.filter_by(rut=empresa.rut).first():
+            flash("Ya existe una empresa registrada con ese RUT.", "error")
+            return redirect(url_for("empresa_registro"))
+        empresa.razon_social = sii_proof["razon_social"]
+        empresa.sii_verificado = True
+        empresa.sii_razon_social = sii_proof["razon_social"]
+        empresa.sii_actividad = sii_proof.get("actividad", "")
+        empresa.sii_fecha_consulta = datetime.utcnow()
         if len(password) < 10:
             flash("La contrasena debe tener al menos 10 caracteres.", "error")
             return redirect(url_for("empresa_registro"))
@@ -1809,12 +2128,20 @@ def empresa_registro():
             db.session.add(empresa)
             db.session.flush()
             add_novedad("empresa", "Nueva empresa", f"{empresa.nombre} se unio a la red.", empresa=empresa)
+            email_enviado = enviar_verificacion_email("empresa", empresa)
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
             flash("Ese correo de empresa ya existe.", "error")
             return redirect(url_for("empresa_registro"))
         session["empresa_id"] = empresa.id
+        session.pop("sii_company_proof", None)
+        flash(
+            "Verifica tu correo. Luego un administrador revisara los datos de la empresa."
+            if email_enviado
+            else "Empresa creada. Falta configurar SMTP para verificar el correo y comenzar la revision.",
+            "success" if email_enviado else "info",
+        )
         return redirect(url_for("empresa_panel"))
     return render_template("empresa_registro.html")
 
@@ -1964,6 +2291,9 @@ def cambiar_estado_postulacion(postulacion_id):
 @empresa_required
 def nueva_oferta():
     empresa = current_empresa()
+    if not empresa.email_verificado or empresa.estado_verificacion != "Aprobada":
+        flash("Debes verificar el correo y obtener aprobacion antes de publicar ofertas.", "error")
+        return redirect(url_for("empresa_panel"))
     if request.method == "POST":
         oferta = Oferta(
             empresa_id=empresa.id,
@@ -2285,7 +2615,187 @@ def admin_panel():
         ofertas=Oferta.query.order_by(Oferta.fecha_publicacion.desc()).all(),
         postulaciones=Postulacion.query.order_by(Postulacion.fecha.desc()).all(),
         novedades=Novedad.query.order_by(Novedad.fecha.desc()).limit(30).all(),
+        reportes=ReporteSeguridad.query.order_by(ReporteSeguridad.fecha.desc()).limit(100).all(),
+        auditorias=AuditoriaSeguridad.query.order_by(AuditoriaSeguridad.fecha.desc()).limit(100).all(),
     )
+
+
+@app.route("/empresa/verificacion", methods=["POST"])
+@empresa_required
+def actualizar_verificacion_empresa():
+    empresa = current_empresa()
+    rut = normalizar_rut(request.form.get("rut", ""))
+    razon_social = request.form.get("razon_social", "").strip()
+    responsable_nombre = request.form.get("responsable_nombre", "").strip()
+    responsable_cargo = request.form.get("responsable_cargo", "").strip()
+    if not all([rut, razon_social, responsable_nombre, responsable_cargo]) or not rut_chileno_valido(rut):
+        flash("Completa los datos de verificacion con un RUT valido.", "error")
+        return redirect(url_for("empresa_panel"))
+    sii_proof = comprobante_sii_para(rut)
+    if not sii_proof:
+        flash("Consulta primero el RUT en el SII para actualizar la verificacion.", "error")
+        return redirect(url_for("empresa_panel"))
+    duplicada = Empresa.query.filter(Empresa.rut == rut, Empresa.id != empresa.id).first()
+    if duplicada:
+        flash("Ese RUT ya pertenece a otra cuenta.", "error")
+        return redirect(url_for("empresa_panel"))
+    empresa.rut = rut
+    empresa.razon_social = sii_proof["razon_social"]
+    empresa.responsable_nombre = responsable_nombre
+    empresa.responsable_cargo = responsable_cargo
+    empresa.sii_verificado = True
+    empresa.sii_razon_social = sii_proof["razon_social"]
+    empresa.sii_actividad = sii_proof.get("actividad", "")
+    empresa.sii_fecha_consulta = datetime.utcnow()
+    empresa.estado_verificacion = "Pendiente"
+    empresa.motivo_verificacion = None
+    registrar_auditoria("solicitar_revision", "empresa", empresa.id)
+    db.session.commit()
+    session.pop("sii_company_proof", None)
+    flash("Datos enviados para revision.", "success")
+    return redirect(url_for("empresa_panel"))
+
+
+@app.route("/reportar/<objetivo_tipo>/<int:objetivo_id>", methods=["POST"])
+def reportar(objetivo_tipo, objetivo_id):
+    if current_user.is_authenticated:
+        reportante_tipo, reportante_id = "usuario", current_user.id
+    else:
+        empresa = current_empresa()
+        if not empresa:
+            flash("Debes iniciar sesion para reportar.", "error")
+            return redirect(url_for("index"))
+        reportante_tipo, reportante_id = "empresa", empresa.id
+    modelos = {"usuario": Usuario, "empresa": Empresa, "oferta": Oferta, "mensaje": Mensaje}
+    modelo = modelos.get(objetivo_tipo)
+    objetivo = db.session.get(modelo, objetivo_id) if modelo else None
+    destino = url_for("index")
+    if objetivo_tipo == "usuario":
+        destino = url_for("perfil_publico", usuario_id=objetivo_id)
+    elif objetivo_tipo == "empresa":
+        destino = url_for("empresa_publica", empresa_id=objetivo_id)
+    elif objetivo_tipo == "oferta":
+        destino = url_for("feed")
+    elif objetivo_tipo == "mensaje":
+        destino = url_for("mensajes_usuario" if reportante_tipo == "usuario" else "mensajes_empresa")
+    if not objetivo:
+        flash("El elemento reportado no existe.", "error")
+        return redirect(destino)
+    if objetivo_tipo == "mensaje":
+        postulacion = objetivo.postulacion
+        autorizado = (
+            reportante_tipo == "usuario" and postulacion.usuario_id == reportante_id
+        ) or (
+            reportante_tipo == "empresa" and postulacion.oferta.empresa_id == reportante_id
+        )
+        if not autorizado:
+            return render_template("404.html"), 404
+    if objetivo_tipo == reportante_tipo and objetivo_id == reportante_id:
+        flash("No puedes reportar tu propia cuenta.", "error")
+        return redirect(destino)
+    motivos = {"Suplantacion", "Estafa", "Oferta enganosa", "Acoso", "Spam", "Otro"}
+    motivo = request.form.get("motivo", "").strip()
+    detalle = request.form.get("detalle", "").strip()
+    if motivo not in motivos or not 20 <= len(detalle) <= 1000:
+        flash("Selecciona un motivo y escribe entre 20 y 1000 caracteres.", "error")
+        return redirect(destino)
+    duplicado = ReporteSeguridad.query.filter_by(
+        reportante_tipo=reportante_tipo,
+        reportante_id=reportante_id,
+        objetivo_tipo=objetivo_tipo,
+        objetivo_id=objetivo_id,
+        estado="Pendiente",
+    ).first()
+    if duplicado:
+        flash("Ya tienes un reporte pendiente sobre este elemento.", "info")
+        return redirect(destino)
+    db.session.add(
+        ReporteSeguridad(
+            reportante_tipo=reportante_tipo,
+            reportante_id=reportante_id,
+            objetivo_tipo=objetivo_tipo,
+            objetivo_id=objetivo_id,
+            motivo=motivo,
+            detalle=detalle,
+        )
+    )
+    db.session.commit()
+    flash("Reporte enviado. El administrador revisara la informacion.", "success")
+    return redirect(destino)
+
+
+@app.route("/admin-nexotp/verificacion/<objetivo_tipo>/<int:objetivo_id>", methods=["POST"])
+@admin_required
+def admin_verificacion(objetivo_tipo, objetivo_id):
+    accion = request.form.get("accion", "").strip()
+    motivo = request.form.get("motivo", "").strip()
+    if objetivo_tipo == "empresa":
+        objetivo = db.session.get(Empresa, objetivo_id)
+        if not objetivo or accion not in {"aprobar", "rechazar", "suspender", "reactivar"}:
+            return redirect(url_for("admin_panel"))
+        if accion == "aprobar":
+            if not objetivo.email_verificado:
+                flash("La empresa debe verificar primero su correo.", "error")
+                return redirect(url_for("admin_panel"))
+            if not objetivo.sii_verificado:
+                flash("El RUT debe existir en la consulta del SII antes de aprobar.", "error")
+                return redirect(url_for("admin_panel"))
+            if not all([
+                objetivo.rut,
+                objetivo.razon_social,
+                objetivo.responsable_nombre,
+                objetivo.responsable_cargo,
+            ]) or not rut_chileno_valido(objetivo.rut):
+                flash("Faltan datos antifraude validos de la empresa.", "error")
+                return redirect(url_for("admin_panel"))
+            objetivo.estado_verificacion = "Aprobada"
+            objetivo.suspendida = False
+        elif accion == "rechazar":
+            objetivo.estado_verificacion = "Rechazada"
+        elif accion == "suspender":
+            objetivo.suspendida = True
+            objetivo.estado_verificacion = "Suspendida"
+        else:
+            objetivo.suspendida = False
+            objetivo.estado_verificacion = "Pendiente"
+        objetivo.motivo_verificacion = motivo[:320]
+    elif objetivo_tipo == "usuario":
+        objetivo = db.session.get(Usuario, objetivo_id)
+        if not objetivo or accion not in {"verificar", "retirar", "suspender", "reactivar"}:
+            return redirect(url_for("admin_panel"))
+        if accion == "verificar":
+            if not objetivo.email_verificado:
+                flash("El usuario debe verificar primero su correo.", "error")
+                return redirect(url_for("admin_panel"))
+            objetivo.identidad_verificada = True
+        elif accion == "retirar":
+            objetivo.identidad_verificada = False
+        elif accion == "suspender":
+            objetivo.suspendido = True
+        else:
+            objetivo.suspendido = False
+    else:
+        return redirect(url_for("admin_panel"))
+    registrar_auditoria(accion, objetivo_tipo, objetivo_id, motivo)
+    db.session.commit()
+    flash("Estado de verificacion actualizado.", "success")
+    return redirect(url_for("admin_panel"))
+
+
+@app.route("/admin-nexotp/reporte/<int:reporte_id>", methods=["POST"])
+@admin_required
+def admin_resolver_reporte(reporte_id):
+    reporte = db.session.get(ReporteSeguridad, reporte_id)
+    estado = request.form.get("estado", "").strip()
+    if not reporte or estado not in {"Revisado", "Descartado", "Resuelto"}:
+        return redirect(url_for("admin_panel"))
+    reporte.estado = estado
+    reporte.resolucion = request.form.get("resolucion", "").strip()[:1000]
+    reporte.fecha_resolucion = datetime.utcnow()
+    registrar_auditoria("resolver_reporte", "reporte", reporte.id, f"{estado}: {reporte.resolucion}")
+    db.session.commit()
+    flash("Reporte actualizado.", "success")
+    return redirect(url_for("admin_panel"))
 
 
 @app.route("/admin-nexotp/usuario/<int:usuario_id>/editar", methods=["GET", "POST"])
@@ -2296,6 +2806,7 @@ def admin_editar_usuario(usuario_id):
         flash("Usuario no encontrado.", "error")
         return redirect(url_for("admin_panel"))
     if request.method == "POST":
+        email_anterior = usuario.email
         for field in [
             "nombre",
             "apellido",
@@ -2317,6 +2828,10 @@ def admin_editar_usuario(usuario_id):
             "portafolio",
         ]:
             setattr(usuario, field, request.form.get(field, "").strip())
+        usuario.email = usuario.email.lower()
+        if usuario.email != email_anterior:
+            usuario.email_verificado = False
+            usuario.identidad_verificada = False
         password = request.form.get("password", "").strip()
         if password:
             usuario.set_password(password)
@@ -2338,8 +2853,13 @@ def admin_editar_empresa(empresa_id):
         flash("Empresa no encontrada.", "error")
         return redirect(url_for("admin_panel"))
     if request.method == "POST":
+        email_anterior = empresa.email
         for field in ["nombre", "email", "rubro", "descripcion", "ubicacion", "contacto", "web", "foto_url", "logo_inicial", "color"]:
             setattr(empresa, field, request.form.get(field, "").strip())
+        empresa.email = empresa.email.lower()
+        if empresa.email != email_anterior:
+            empresa.email_verificado = False
+            empresa.estado_verificacion = "Pendiente"
         empresa.amigable_tp = request.form.get("amigable_tp") == "1"
         password = request.form.get("password", "").strip()
         if password:
@@ -2474,11 +2994,11 @@ def mapa():
         radio_km = max(1, float(radio))
     except ValueError:
         radio_km = 10
-    query = Oferta.query.filter_by(activa=True)
+    query = ofertas_publicas_query()
     if comuna:
-        query = query.filter_by(comuna=comuna)
+        query = query.filter(Oferta.comuna == comuna)
     if especialidad:
-        query = query.filter_by(especialidad_req=especialidad)
+        query = query.filter(Oferta.especialidad_req == especialidad)
     ofertas = query.order_by(Oferta.fecha_publicacion.desc()).all()
     centro_coords = COMUNA_COORDS.get(current_user.comuna, COMUNA_COORDS["Santiago"])
     if not comuna:

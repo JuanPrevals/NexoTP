@@ -50,6 +50,9 @@
               <strong>{% if mensaje.remitente_tipo == 'empresa' %}Empresa{% else %}Egresado{% endif %}</strong>
               <p>{{ mensaje.contenido }}</p>
               <span>{{ mensaje.fecha.strftime('%d-%m-%Y %H:%M') }}</span>
+              {% if not ((es_empresa and mensaje.remitente_tipo == 'empresa') or ((not es_empresa) and mensaje.remitente_tipo == 'usuario')) %}
+                <details class="report-box"><summary>Reportar mensaje</summary><form class="form-card flat" method="post" action="{{ url_for('reportar', objetivo_tipo='mensaje', objetivo_id=mensaje.id) }}"><input type="hidden" name="motivo" value="Acoso"><div class="field"><label>Explica el problema</label><textarea name="detalle" minlength="20" maxlength="1000" required></textarea></div><button class="btn btn-secondary">Enviar reporte</button></form></details>
+              {% endif %}
             </div>
           {% else %}
             <p class="muted">Esta conversacion todavia no tiene mensajes.</p>

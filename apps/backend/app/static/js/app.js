@@ -11,6 +11,71 @@ document.querySelectorAll('form[method="post"], form[method="POST"]').forEach((f
   form.append(input);
 });
 
+async function lookupCompanyRut(form) {
+  const rutInput = form?.querySelector("[data-rut-input]");
+  const button = form?.querySelector("[data-sii-lookup]");
+  const status = form?.querySelector("[data-sii-status]");
+  const rut = rutInput?.value.trim() || "";
+  if (!rutInput || !button || !status || rut.replace(/\D/g, "").length < 7) return;
+  if (button.disabled || form.dataset.siiVerifiedRut === rut) return;
+  button.disabled = true;
+  status.textContent = "Consultando antecedentes empresariales en el SII...";
+  try {
+    const response = await fetch("/api/verificar-rut-empresa", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
+        "X-Requested-With": "fetch",
+      },
+      body: JSON.stringify({ rut }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) {
+      form.dataset.siiVerifiedRut = "";
+      status.textContent = data.message || "No fue posible verificar el RUT.";
+      return;
+    }
+    rutInput.value = data.rut;
+    form.elements.razon_social.value = data.razon_social;
+    if (form.elements.nombre && !form.elements.nombre.value.trim()) {
+      form.elements.nombre.value = data.razon_social;
+    }
+    if (form.elements.rubro && !form.elements.rubro.value.trim() && data.actividad) {
+      form.elements.rubro.value = data.actividad;
+    }
+    form.dataset.siiVerifiedRut = data.rut;
+    status.textContent = data.inicio_actividades
+      ? `Empresa encontrada: ${data.razon_social}. Inicio de actividades vigente.`
+      : `Empresa encontrada: ${data.razon_social}. El SII no informa inicio de actividades vigente.`;
+  } catch (_error) {
+    form.dataset.siiVerifiedRut = "";
+    status.textContent = "No se pudo conectar con el verificador. Intenta nuevamente.";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-sii-lookup]");
+  if (button) lookupCompanyRut(button.closest("[data-sii-form]"));
+});
+
+document.addEventListener("focusout", (event) => {
+  const input = event.target.closest("[data-rut-input]");
+  if (input) lookupCompanyRut(input.closest("[data-sii-form]"));
+});
+
+document.addEventListener("input", (event) => {
+  const input = event.target.closest("[data-rut-input]");
+  if (!input) return;
+  const form = input.closest("[data-sii-form]");
+  if (form?.dataset.siiVerifiedRut && form.dataset.siiVerifiedRut !== input.value.trim()) {
+    form.dataset.siiVerifiedRut = "";
+    if (form.elements.razon_social) form.elements.razon_social.value = "";
+  }
+});
+
 document.addEventListener("click", async (event) => {
   const themeButton = event.target.closest("[data-theme-toggle]");
   if (themeButton) {
@@ -257,6 +322,7 @@ function renderMessages(conversation, forceStickToBottom = false) {
       <strong>${escapeHTML(message.autor)}</strong>
       <p>${escapeHTML(message.contenido)}</p>
       <span>${escapeHTML(message.fecha)}</span>
+      ${message.own ? "" : `<details class="report-box"><summary>Reportar mensaje</summary><form class="form-card flat" method="post" action="/reportar/mensaje/${Number(message.id)}"><input type="hidden" name="_csrf_token" value="${escapeHTML(csrfToken)}"><input type="hidden" name="motivo" value="Acoso"><div class="field"><label>Explica el problema</label><textarea name="detalle" minlength="20" maxlength="1000" required></textarea></div><button class="btn btn-secondary">Enviar reporte</button></form></details>`}
     </div>
   `).join("");
   if (shouldStickToBottom) {

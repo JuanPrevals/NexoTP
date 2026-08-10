@@ -13,11 +13,23 @@
       <h1>{{ empresa.nombre }}</h1>
       <p class="lead">{{ empresa.descripcion }}</p>
       <div class="chips">
+        {% if empresa.email_verificado %}<span class="chip">Correo verificado</span>{% endif %}
+        {% if empresa.estado_verificacion == 'Aprobada' and not empresa.suspendida %}<span class="chip chip-accent">Empresa verificada</span>{% endif %}
         <span class="chip">{{ empresa.rubro }}</span>
         <span class="chip">{{ empresa.ubicacion }}</span>
         {% if empresa.amigable_tp %}<span class="chip chip-accent">Amigable con egresados TP</span>{% endif %}
         <span class="chip">{{ promedio }} / 5 resenas</span>
       </div>
+      {% if current_user.is_authenticated or empresa_actual %}
+        <details class="report-box">
+          <summary>Reportar empresa</summary>
+          <form class="form-card flat" method="post" action="{{ url_for('reportar', objetivo_tipo='empresa', objetivo_id=empresa.id) }}">
+            <div class="field"><label>Motivo</label><select name="motivo" required><option value="">Selecciona</option><option>Suplantacion</option><option>Estafa</option><option>Oferta enganosa</option><option>Acoso</option><option>Spam</option><option>Otro</option></select></div>
+            <div class="field"><label>Que ocurrio</label><textarea name="detalle" minlength="20" maxlength="1000" required></textarea></div>
+            <button class="btn btn-secondary">Enviar reporte</button>
+          </form>
+        </details>
+      {% endif %}
     </div>
   </section>
 

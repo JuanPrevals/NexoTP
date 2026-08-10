@@ -9,3 +9,5 @@ Flask-Login
 Werkzeug
 gunicorn
 reportlab
+requests
+beautifulsoup4

@@ -19,8 +19,10 @@
       <div class="stack">
         {% for u in usuarios %}
           <div class="feed-card flat row between">
-            <span><strong>{{ u.nombre_completo }}</strong> · {{ u.email }} · {{ u.especialidad }}</span>
+            <span><strong>{{ u.nombre_completo }}</strong> · {{ u.email }} · {{ u.especialidad }}<br><small>Correo: {% if u.email_verificado %}verificado{% else %}pendiente{% endif %} · Identidad: {% if u.identidad_verificada %}verificada{% else %}pendiente{% endif %}{% if u.suspendido %} · SUSPENDIDO{% endif %}</small></span>
             <span class="row">
+              <form method="post" action="{{ url_for('admin_verificacion', objetivo_tipo='usuario', objetivo_id=u.id) }}"><button class="btn btn-secondary" name="accion" value="{% if u.identidad_verificada %}retirar{% else %}verificar{% endif %}">{% if u.identidad_verificada %}Retirar sello{% else %}Verificar identidad{% endif %}</button></form>
+              <form method="post" action="{{ url_for('admin_verificacion', objetivo_tipo='usuario', objetivo_id=u.id) }}"><button class="btn btn-secondary" name="accion" value="{% if u.suspendido %}reactivar{% else %}suspender{% endif %}">{% if u.suspendido %}Reactivar{% else %}Suspender{% endif %}</button></form>
               <a class="btn btn-secondary" href="{{ url_for('admin_editar_usuario', usuario_id=u.id) }}">Editar</a>
               <form method="post" action="{{ url_for('admin_eliminar', tipo='usuario', item_id=u.id) }}" onsubmit="return confirm('Eliminar usuario y sus postulaciones?')"><button class="btn btn-secondary">Eliminar</button></form>
             </span>
@@ -34,8 +36,11 @@
       <div class="stack">
         {% for e in empresas %}
           <div class="feed-card flat row between">
-            <span><strong>{{ e.nombre }}</strong> · {{ e.email }} · {{ e.ofertas|length }} ofertas</span>
+            <span><strong>{{ e.nombre }}</strong> · {{ e.email }} · {{ e.ofertas|length }} ofertas<br><small>Razon social: {{ e.razon_social or 'No informada' }} · RUT: {{ e.rut or 'No informado' }} · SII: {% if e.sii_verificado %}encontrado{% else %}pendiente{% endif %} · Responsable: {{ e.responsable_nombre or 'No informado' }} ({{ e.responsable_cargo or 'sin cargo' }}) · {{ e.estado_verificacion }} · Correo: {% if e.email_verificado %}verificado{% else %}pendiente{% endif %}</small></span>
             <span class="row">
+              <form method="post" action="{{ url_for('admin_verificacion', objetivo_tipo='empresa', objetivo_id=e.id) }}"><button class="btn btn-secondary" name="accion" value="aprobar">Aprobar</button></form>
+              <form method="post" action="{{ url_for('admin_verificacion', objetivo_tipo='empresa', objetivo_id=e.id) }}"><input name="motivo" aria-label="Motivo del rechazo" placeholder="Motivo" required><button class="btn btn-secondary" name="accion" value="rechazar">Rechazar</button></form>
+              <form method="post" action="{{ url_for('admin_verificacion', objetivo_tipo='empresa', objetivo_id=e.id) }}"><button class="btn btn-secondary" name="accion" value="{% if e.suspendida %}reactivar{% else %}suspender{% endif %}">{% if e.suspendida %}Reactivar{% else %}Suspender{% endif %}</button></form>
               <a class="btn btn-secondary" href="{{ url_for('admin_editar_empresa', empresa_id=e.id) }}">Editar</a>
               <form method="post" action="{{ url_for('admin_eliminar', tipo='empresa', item_id=e.id) }}" onsubmit="return confirm('Eliminar empresa, ofertas y postulaciones asociadas?')"><button class="btn btn-secondary">Eliminar</button></form>
             </span>
@@ -85,6 +90,32 @@
             <form method="post" action="{{ url_for('admin_eliminar', tipo='novedad', item_id=n.id) }}"><button class="btn btn-secondary">Eliminar</button></form>
           </div>
         {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Reportes de seguridad</h2>
+      <div class="stack">
+        {% for r in reportes %}
+          <article class="feed-card flat">
+            <strong>#{{ r.id }} · {{ r.motivo }} · {{ r.objetivo_tipo }} {{ r.objetivo_id }}</strong>
+            <p class="muted">{{ r.detalle }}</p>
+            <p class="muted mini">Estado: {{ r.estado }} · Reportante: {{ r.reportante_tipo }} {{ r.reportante_id }} · {{ r.fecha.strftime('%d-%m-%Y %H:%M') }}</p>
+            <form class="form-card flat" method="post" action="{{ url_for('admin_resolver_reporte', reporte_id=r.id) }}">
+              <div class="field"><label>Resolucion</label><textarea name="resolucion" maxlength="1000">{{ r.resolucion or '' }}</textarea></div>
+              <div class="row"><button class="btn btn-secondary" name="estado" value="Revisado">Revisado</button><button class="btn btn-secondary" name="estado" value="Descartado">Descartar</button><button class="btn btn-primary" name="estado" value="Resuelto">Resolver</button></div>
+            </form>
+          </article>
+        {% else %}<p class="muted">No hay reportes.</p>{% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Auditoria antifraude</h2>
+      <div class="stack">
+        {% for a in auditorias %}
+          <div class="feed-card flat"><strong>{{ a.accion }}</strong> · {{ a.objetivo_tipo }} {{ a.objetivo_id }}<p class="muted mini">{{ a.detalle or 'Sin observacion' }} · {{ a.fecha.strftime('%d-%m-%Y %H:%M') }}</p></div>
+        {% else %}<p class="muted">Sin acciones registradas.</p>{% endfor %}
       </div>
     </div>
   </section>

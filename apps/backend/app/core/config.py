@@ -25,6 +25,7 @@ class Settings:
     allowed_origins: tuple[str, ...]
     secure_cookies: bool
     seed_demo_data: bool
+    public_origin: str
 
 
 def load_settings() -> Settings:
@@ -37,6 +38,14 @@ def load_settings() -> Settings:
         raise RuntimeError(
             "Produccion requiere SECRET_KEY (minimo 32 caracteres) y ADMIN_PASSWORD_HASH."
         )
+    default_origin = (
+        "https://p01--nexotp-api--jwyjydpmw5fj.code.run"
+        if production
+        else "http://localhost:8000"
+    )
+    public_origin = os.environ.get("PUBLIC_ORIGIN", default_origin).rstrip("/")
+    if production and not public_origin.startswith("https://"):
+        raise RuntimeError("Produccion requiere PUBLIC_ORIGIN con HTTPS.")
 
     return Settings(
         environment=environment,
@@ -46,6 +55,7 @@ def load_settings() -> Settings:
         allowed_origins=_origins(),
         secure_cookies=production,
         seed_demo_data=os.environ.get("SEED_DEMO_DATA", "0") == "1",
+        public_origin=public_origin,
     )
 
 
