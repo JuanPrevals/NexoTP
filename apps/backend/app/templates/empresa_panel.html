@@ -23,8 +23,8 @@
     <form class="form-card" method="post" action="{{ url_for('actualizar_verificacion_empresa') }}" data-sii-form>
       <h2>Datos para verificacion</h2>
       <p class="muted">Solo el administrador puede ver estos datos.</p>
-      <div class="grid-2"><div class="field"><label>Razon social</label><input name="razon_social" value="{{ empresa.sii_razon_social or empresa.razon_social or '' }}" readonly required></div><div class="field"><label>RUT</label><input name="rut" value="{{ empresa.rut or '' }}" data-rut-input required><button class="btn btn-secondary" type="button" data-sii-lookup>Consultar SII</button></div></div>
-      <p class="muted mini" data-sii-status aria-live="polite">{% if empresa.sii_verificado %}RUT consultado en SII{% if empresa.sii_actividad %}: {{ empresa.sii_actividad }}{% endif %}.{% else %}Consulta el RUT antes de enviar la solicitud.{% endif %}</p>
+      <div class="grid-2"><div class="field"><label>Razon social</label><input name="razon_social" value="{{ empresa.sii_razon_social or empresa.razon_social or '' }}" readonly required></div><div class="field"><label>RUT</label><input name="rut" value="{{ empresa.rut or '' }}" inputmode="text" autocomplete="off" data-rut-input data-company-rut required></div></div>
+      <p class="muted mini" data-sii-status aria-live="polite"></p>
       <div class="grid-2"><div class="field"><label>Responsable</label><input name="responsable_nombre" value="{{ empresa.responsable_nombre or '' }}" required></div><div class="field"><label>Cargo</label><input name="responsable_cargo" value="{{ empresa.responsable_cargo or '' }}" required></div></div>
       <button class="btn btn-primary">Enviar para revision</button>
     </form>

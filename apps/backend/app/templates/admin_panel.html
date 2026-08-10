@@ -19,7 +19,7 @@
       <div class="stack">
         {% for u in usuarios %}
           <div class="feed-card flat row between">
-            <span><strong>{{ u.nombre_completo }}</strong> · {{ u.email }} · {{ u.especialidad }}<br><small>Correo: {% if u.email_verificado %}verificado{% else %}pendiente{% endif %} · Identidad: {% if u.identidad_verificada %}verificada{% else %}pendiente{% endif %}{% if u.suspendido %} · SUSPENDIDO{% endif %}</small></span>
+            <span><strong>{{ u.nombre_completo }}</strong> · {{ u.email }} · {{ u.especialidad }}<br><small>RUT: {{ formatear_rut(u.rut) if u.rut else 'Pendiente' }} · Correo: {% if u.email_verificado %}verificado{% else %}pendiente{% endif %} · Identidad: {% if u.identidad_verificada %}verificada{% else %}pendiente{% endif %}{% if u.suspendido %} · SUSPENDIDO{% endif %}</small></span>
             <span class="row">
               <form method="post" action="{{ url_for('admin_verificacion', objetivo_tipo='usuario', objetivo_id=u.id) }}"><button class="btn btn-secondary" name="accion" value="{% if u.identidad_verificada %}retirar{% else %}verificar{% endif %}">{% if u.identidad_verificada %}Retirar sello{% else %}Verificar identidad{% endif %}</button></form>
               <form method="post" action="{{ url_for('admin_verificacion', objetivo_tipo='usuario', objetivo_id=u.id) }}"><button class="btn btn-secondary" name="accion" value="{% if u.suspendido %}reactivar{% else %}suspender{% endif %}">{% if u.suspendido %}Reactivar{% else %}Suspender{% endif %}</button></form>

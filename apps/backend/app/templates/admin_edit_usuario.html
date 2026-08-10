@@ -8,6 +8,7 @@
       <div class="field"><label>Nombre</label><input name="nombre" value="{{ usuario.nombre }}" required></div>
       <div class="field"><label>Apellido</label><input name="apellido" value="{{ usuario.apellido }}" required></div>
       <div class="field"><label>Email</label><input name="email" type="email" value="{{ usuario.email }}" required></div>
+      <div class="field"><label>RUT</label><input name="rut" value="{{ usuario.rut or '' }}" data-rut-input required></div>
       <div class="field"><label>Nueva clave opcional</label><input name="password" type="password"></div>
       <div class="field"><label>Telefono</label><input name="telefono" value="{{ usuario.telefono or '' }}"></div>
       <div class="field"><label>Comuna</label><input name="comuna" value="{{ usuario.comuna or '' }}"></div>

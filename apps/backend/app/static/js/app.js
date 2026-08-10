@@ -11,14 +11,40 @@ document.querySelectorAll('form[method="post"], form[method="POST"]').forEach((f
   form.append(input);
 });
 
+function normalizeRut(value) {
+  return String(value || "").toUpperCase().replace(/[^0-9K]/g, "");
+}
+
+function validRut(value) {
+  if (!/^[0-9K.\-\s]+$/i.test(String(value || "").trim())) return false;
+  const rut = normalizeRut(value);
+  if (rut.length < 8 || !/^\d+[0-9K]$/.test(rut)) return false;
+  let total = 0;
+  let factor = 2;
+  for (let index = rut.length - 2; index >= 0; index -= 1) {
+    total += Number(rut[index]) * factor;
+    factor = factor === 7 ? 2 : factor + 1;
+  }
+  const rest = 11 - (total % 11);
+  const expected = rest === 11 ? "0" : rest === 10 ? "K" : String(rest);
+  return rut.at(-1) === expected;
+}
+
+function formatRut(value) {
+  const rut = normalizeRut(value);
+  if (rut.length < 2) return rut;
+  const body = Number(rut.slice(0, -1)).toLocaleString("es-CL");
+  return `${body}-${rut.at(-1)}`;
+}
+
 async function lookupCompanyRut(form) {
-  const rutInput = form?.querySelector("[data-rut-input]");
-  const button = form?.querySelector("[data-sii-lookup]");
+  const rutInput = form?.querySelector("[data-company-rut]");
   const status = form?.querySelector("[data-sii-status]");
   const rut = rutInput?.value.trim() || "";
-  if (!rutInput || !button || !status || rut.replace(/\D/g, "").length < 7) return;
-  if (button.disabled || form.dataset.siiVerifiedRut === rut) return;
-  button.disabled = true;
+  const normalized = normalizeRut(rut);
+  if (!rutInput || !status || !validRut(rut)) return;
+  if (form.dataset.siiLoading === "1" || form.dataset.siiVerifiedRut === normalized) return;
+  form.dataset.siiLoading = "1";
   status.textContent = "Consultando antecedentes empresariales en el SII...";
   try {
     const response = await fetch("/api/verificar-rut-empresa", {
@@ -44,7 +70,7 @@ async function lookupCompanyRut(form) {
     if (form.elements.rubro && !form.elements.rubro.value.trim() && data.actividad) {
       form.elements.rubro.value = data.actividad;
     }
-    form.dataset.siiVerifiedRut = data.rut;
+    form.dataset.siiVerifiedRut = normalizeRut(data.rut);
     status.textContent = data.inicio_actividades
       ? `Empresa encontrada: ${data.razon_social}. Inicio de actividades vigente.`
       : `Empresa encontrada: ${data.razon_social}. El SII no informa inicio de actividades vigente.`;
@@ -52,28 +78,42 @@ async function lookupCompanyRut(form) {
     form.dataset.siiVerifiedRut = "";
     status.textContent = "No se pudo conectar con el verificador. Intenta nuevamente.";
   } finally {
-    button.disabled = false;
+    form.dataset.siiLoading = "0";
   }
 }
 
-document.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-sii-lookup]");
-  if (button) lookupCompanyRut(button.closest("[data-sii-form]"));
-});
-
 document.addEventListener("focusout", (event) => {
   const input = event.target.closest("[data-rut-input]");
-  if (input) lookupCompanyRut(input.closest("[data-sii-form]"));
+  if (!input) return;
+  const isValid = validRut(input.value);
+  if (isValid) input.value = formatRut(input.value);
+  input.setCustomValidity(isValid ? "" : "Revisa el RUT ingresado.");
+  if (!input.validationMessage) lookupCompanyRut(input.closest("[data-sii-form]"));
 });
 
 document.addEventListener("input", (event) => {
   const input = event.target.closest("[data-rut-input]");
   if (!input) return;
+  input.setCustomValidity("");
   const form = input.closest("[data-sii-form]");
-  if (form?.dataset.siiVerifiedRut && form.dataset.siiVerifiedRut !== input.value.trim()) {
+  if (form?.dataset.siiVerifiedRut && form.dataset.siiVerifiedRut !== normalizeRut(input.value)) {
     form.dataset.siiVerifiedRut = "";
     if (form.elements.razon_social) form.elements.razon_social.value = "";
   }
+});
+
+document.addEventListener("submit", async (event) => {
+  const form = event.target.closest("[data-sii-form]");
+  if (!form) return;
+  const input = form.querySelector("[data-company-rut]");
+  const normalized = normalizeRut(input?.value);
+  if (form.dataset.siiVerifiedRut === normalized) return;
+  event.preventDefault();
+  if (form.dataset.siiLoading !== "1") await lookupCompanyRut(form);
+  for (let attempt = 0; form.dataset.siiLoading === "1" && attempt < 100; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  if (form.dataset.siiVerifiedRut === normalizeRut(input?.value)) form.requestSubmit();
 });
 
 document.addEventListener("click", async (event) => {

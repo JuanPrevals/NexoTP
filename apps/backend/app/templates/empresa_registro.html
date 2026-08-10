@@ -10,9 +10,9 @@
     </div>
     <div class="grid-2">
       <div class="field"><label>Razon social</label><input name="razon_social" readonly required></div>
-      <div class="field"><label>RUT empresa</label><input name="rut" placeholder="76.123.456-7" data-rut-input required><button class="btn btn-secondary" type="button" data-sii-lookup>Consultar SII</button></div>
+      <div class="field"><label>RUT empresa</label><input name="rut" inputmode="text" autocomplete="off" data-rut-input data-company-rut required></div>
     </div>
-    <p class="muted mini" data-sii-status aria-live="polite">Consulta el RUT para comprobar que la empresa existe y completar su razon social.</p>
+    <p class="muted mini" data-sii-status aria-live="polite"></p>
     <div class="grid-2">
       <div class="field"><label>Responsable</label><input name="responsable_nombre" autocomplete="name" required></div>
       <div class="field"><label>Cargo del responsable</label><input name="responsable_cargo" required></div>

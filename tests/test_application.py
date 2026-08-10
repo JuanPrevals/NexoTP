@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import re
 
 from apps.backend.app.main import app
-from apps.backend.app.legacy import normalizar_rut, rut_chileno_valido
+from apps.backend.app.legacy import formatear_rut, normalizar_rut, rut_chileno_valido
 from apps.backend.app.services.sii import SIICompany, SIIInvalidRUT, _parse_response, lookup_company
 
 
@@ -50,6 +50,22 @@ def test_chilean_rut_validation_for_company_verification():
     assert normalizar_rut("12.345.678-5") == "123456785"
     assert rut_chileno_valido("12.345.678-5") is True
     assert rut_chileno_valido("12.345.678-9") is False
+
+
+def test_rut_accepts_common_input_formats_and_rejects_letters():
+    for value in ("123456785", "12.345.678-5", "12 345 678 5", "12345678-5"):
+        assert rut_chileno_valido(value) is True
+    assert formatear_rut("123456785") == "12.345.678-5"
+    assert rut_chileno_valido("abc12.345.678-5") is False
+
+
+def test_user_registration_requires_rut_and_company_lookup_has_no_button():
+    user_page = client.get("/registro")
+    company_page = client.get("/empresa/registro")
+    assert 'name="rut"' in user_page.text
+    assert "data-rut-input" in user_page.text
+    assert "Consultar SII" not in company_page.text
+    assert "Ingresa un RUT valido de persona juridica." not in company_page.text
 
 
 def test_invalid_email_verification_token_is_rejected():

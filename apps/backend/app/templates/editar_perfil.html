@@ -14,6 +14,7 @@
       <div class="field"><label>Apellido</label><input name="apellido" value="{{ current_user.apellido }}" required></div>
       <div class="field"><label>Telefono</label><input name="telefono" value="{{ current_user.telefono or '' }}"></div>
       <div class="field"><label>Correo</label><input value="{{ current_user.email }}" disabled></div>
+      <div class="field"><label>RUT</label><input name="rut" value="{{ formatear_rut(current_user.rut) if current_user.rut else '' }}" data-rut-input {% if current_user.rut %}readonly{% endif %} required></div>
       <div class="field"><label>Ciudad</label><input name="comuna" value="{{ current_user.comuna }}"></div>
       <div class="field"><label>Pais</label><input name="pais" value="{{ current_user.pais or 'Chile' }}"></div>
       <div class="field"><label>LinkedIn</label><input name="linkedin" value="{{ current_user.linkedin or '' }}"></div>

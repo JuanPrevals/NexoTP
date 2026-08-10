@@ -123,7 +123,7 @@
               {% if oferta.id in mis_postulaciones %}
                 <button class="btn btn-secondary" disabled>Postulado</button>
               {% else %}
-                <button class="btn btn-primary" data-apply="{{ oferta.id }}" {% if not current_user.email_verificado %}disabled title="Verifica tu correo para postular"{% endif %}>Postular</button>
+                <button class="btn btn-primary" data-apply="{{ oferta.id }}" {% if not current_user.email_verificado or not current_user.rut %}disabled title="Verifica tu correo y registra tu RUT para postular"{% endif %}>Postular</button>
               {% endif %}
             </div>
           </div>

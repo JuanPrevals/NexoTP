@@ -94,6 +94,7 @@ class Usuario(UserMixin, db.Model):
     nombre = db.Column(db.String(100), nullable=False)
     apellido = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False, index=True)
+    rut = db.Column(db.String(20), index=True)
     password_hash = db.Column(db.String(256), nullable=False)
     especialidad = db.Column(db.String(100), nullable=False)
     liceo = db.Column(db.String(180), default="Liceo Comercial Vate Vicente Huidobro")
@@ -653,7 +654,16 @@ def normalizar_rut(valor):
     return re.sub(r"[^0-9kK]", "", valor or "").upper()
 
 
+def formatear_rut(valor):
+    rut = normalizar_rut(valor)
+    if len(rut) < 2 or not rut[:-1].isdigit():
+        return rut
+    return f"{int(rut[:-1]):,}".replace(",", ".") + f"-{rut[-1]}"
+
+
 def rut_chileno_valido(valor):
+    if not re.fullmatch(r"[0-9kK.\-\s]+", str(valor or "").strip()):
+        return False
     rut = normalizar_rut(valor)
     if len(rut) < 8 or not rut[:-1].isdigit():
         return False
@@ -1108,6 +1118,7 @@ def seed_data():
 
 COLUMN_MIGRATIONS = {
     "usuario": {
+        "rut": "VARCHAR(20)",
         "email_verificado": "BOOLEAN NOT NULL DEFAULT FALSE",
         "identidad_verificada": "BOOLEAN NOT NULL DEFAULT FALSE",
         "suspendido": "BOOLEAN NOT NULL DEFAULT FALSE",
@@ -1220,6 +1231,7 @@ def inject_globals():
     return {
         "app_name": APP_NAME,
         "csrf_token": session["csrf_token"],
+        "formatear_rut": formatear_rut,
         "especialidades": ESPECIALIDADES,
         "comunas": COMUNAS,
         "modalidades": MODALIDADES,
@@ -1305,10 +1317,12 @@ def registro():
     if current_user.is_authenticated:
         return redirect(url_for("feed"))
     if request.method == "POST":
+        rut_ingresado = request.form.get("rut", "").strip()
         usuario = Usuario(
             nombre=request.form.get("nombre", "").strip(),
             apellido=request.form.get("apellido", "").strip(),
             email=request.form.get("email", "").strip().lower(),
+            rut=normalizar_rut(rut_ingresado),
             especialidad=request.form.get("especialidad", "").strip(),
             comuna=request.form.get("comuna", "").strip(),
             pais=request.form.get("pais", "Chile").strip() or "Chile",
@@ -1322,8 +1336,14 @@ def registro():
             perfil_profesional=request.form.get("sobre_mi", "").strip(),
         )
         password = request.form.get("password", "")
-        if not all([usuario.nombre, usuario.apellido, usuario.email, usuario.especialidad, usuario.comuna, password]):
+        if not all([usuario.nombre, usuario.apellido, usuario.email, usuario.rut, usuario.especialidad, usuario.comuna, password]):
             flash("Completa los campos obligatorios.", "error")
+            return redirect(url_for("registro"))
+        if not rut_chileno_valido(rut_ingresado):
+            flash("Revisa el RUT ingresado.", "error")
+            return redirect(url_for("registro"))
+        if Usuario.query.filter_by(rut=usuario.rut).first() or Empresa.query.filter_by(rut=usuario.rut).first():
+            flash("Ese RUT ya esta asociado a otra cuenta.", "error")
             return redirect(url_for("registro"))
         if len(password) < 10:
             flash("La contrasena debe tener al menos 10 caracteres.", "error")
@@ -1427,11 +1447,14 @@ def api_verificar_rut_empresa():
     intentos.append(ahora)
     session["sii_lookup_times"] = intentos
     payload = request.get_json(silent=True) or request.form
-    rut = normalizar_rut(payload.get("rut", ""))
+    rut_ingresado = str(payload.get("rut", "")).strip()
+    if not rut_chileno_valido(rut_ingresado):
+        return jsonify({"ok": False, "message": "Revisa el RUT ingresado."}), 400
+    rut = normalizar_rut(rut_ingresado)
     try:
         result = lookup_company(rut)
     except SIIInvalidRUT:
-        return jsonify({"ok": False, "message": "Ingresa un RUT valido de persona juridica."}), 400
+        return jsonify({"ok": False, "message": "Revisa el RUT ingresado."}), 400
     except SIINotFound:
         return jsonify({"ok": False, "message": "El SII no encontro antecedentes para ese RUT."}), 404
     except SIIUnavailable:
@@ -1505,9 +1528,13 @@ def feed():
 @app.route("/postular/<int:oferta_id>", methods=["POST"])
 @login_required
 def postular(oferta_id):
-    if not current_user.email_verificado or current_user.suspendido:
+    if (
+        not current_user.email_verificado
+        or not rut_chileno_valido(current_user.rut)
+        or current_user.suspendido
+    ):
         return respuesta_json_si_fetch(
-            {"ok": False, "message": "Verifica tu correo antes de postular."},
+            {"ok": False, "message": "Verifica tu correo y registra tu RUT antes de postular."},
             url_for("feed"),
             status=403,
         )
@@ -1827,9 +1854,9 @@ def mensajes_usuario():
 @app.route("/mensajes/<int:postulacion_id>", methods=["POST"])
 @login_required
 def enviar_mensaje_usuario(postulacion_id):
-    if not current_user.email_verificado:
+    if not current_user.email_verificado or not rut_chileno_valido(current_user.rut):
         return respuesta_json_si_fetch(
-            {"ok": False, "message": "Verifica tu correo antes de enviar mensajes."},
+            {"ok": False, "message": "Verifica tu correo y registra tu RUT antes de enviar mensajes."},
             url_for("mensajes_usuario"),
             status=403,
         )
@@ -1939,6 +1966,22 @@ def enviar_mensaje_empresa(postulacion_id):
 @login_required
 def editar_perfil():
     if request.method == "POST":
+        rut_ingresado = request.form.get("rut", "").strip()
+        rut_enviado = normalizar_rut(rut_ingresado)
+        if not rut_chileno_valido(rut_ingresado):
+            flash("Revisa el RUT ingresado.", "error")
+            return redirect(url_for("editar_perfil"))
+        if current_user.rut and rut_enviado != current_user.rut:
+            flash("El RUT no puede modificarse desde el perfil. Contacta al administrador.", "error")
+            return redirect(url_for("editar_perfil"))
+        if not current_user.rut:
+            duplicado = Usuario.query.filter(
+                Usuario.rut == rut_enviado, Usuario.id != current_user.id
+            ).first() or Empresa.query.filter_by(rut=rut_enviado).first()
+            if duplicado:
+                flash("Ese RUT ya esta asociado a otra cuenta.", "error")
+                return redirect(url_for("editar_perfil"))
+            current_user.rut = rut_enviado
         fields = [
             "nombre",
             "apellido",
@@ -2074,6 +2117,7 @@ def empresa_login():
 @app.route("/empresa/registro", methods=["GET", "POST"])
 def empresa_registro():
     if request.method == "POST":
+        rut_ingresado = request.form.get("rut", "").strip()
         empresa = Empresa(
             nombre=request.form.get("nombre", "").strip(),
             email=request.form.get("email", "").strip().lower(),
@@ -2085,7 +2129,7 @@ def empresa_registro():
             foto_url=request.form.get("foto_url", "").strip(),
             amigable_tp=request.form.get("amigable_tp") == "1",
             logo_inicial=request.form.get("nombre", "EM")[:2].upper(),
-            rut=normalizar_rut(request.form.get("rut", "")),
+            rut=normalizar_rut(rut_ingresado),
             razon_social=request.form.get("razon_social", "").strip(),
             responsable_nombre=request.form.get("responsable_nombre", "").strip(),
             responsable_cargo=request.form.get("responsable_cargo", "").strip(),
@@ -2105,7 +2149,7 @@ def empresa_registro():
         ]):
             flash("Completa los campos obligatorios.", "error")
             return redirect(url_for("empresa_registro"))
-        if not rut_chileno_valido(empresa.rut):
+        if not rut_chileno_valido(rut_ingresado):
             flash("Ingresa un RUT chileno valido.", "error")
             return redirect(url_for("empresa_registro"))
         sii_proof = comprobante_sii_para(empresa.rut)
@@ -2624,16 +2668,17 @@ def admin_panel():
 @empresa_required
 def actualizar_verificacion_empresa():
     empresa = current_empresa()
-    rut = normalizar_rut(request.form.get("rut", ""))
+    rut_ingresado = request.form.get("rut", "").strip()
+    rut = normalizar_rut(rut_ingresado)
     razon_social = request.form.get("razon_social", "").strip()
     responsable_nombre = request.form.get("responsable_nombre", "").strip()
     responsable_cargo = request.form.get("responsable_cargo", "").strip()
-    if not all([rut, razon_social, responsable_nombre, responsable_cargo]) or not rut_chileno_valido(rut):
+    if not all([rut, razon_social, responsable_nombre, responsable_cargo]) or not rut_chileno_valido(rut_ingresado):
         flash("Completa los datos de verificacion con un RUT valido.", "error")
         return redirect(url_for("empresa_panel"))
     sii_proof = comprobante_sii_para(rut)
     if not sii_proof:
-        flash("Consulta primero el RUT en el SII para actualizar la verificacion.", "error")
+        flash("No fue posible comprobar automaticamente el RUT en el SII.", "error")
         return redirect(url_for("empresa_panel"))
     duplicada = Empresa.query.filter(Empresa.rut == rut, Empresa.id != empresa.id).first()
     if duplicada:
@@ -2767,6 +2812,9 @@ def admin_verificacion(objetivo_tipo, objetivo_id):
             if not objetivo.email_verificado:
                 flash("El usuario debe verificar primero su correo.", "error")
                 return redirect(url_for("admin_panel"))
+            if not rut_chileno_valido(objetivo.rut):
+                flash("El usuario debe registrar un RUT valido antes de verificar su identidad.", "error")
+                return redirect(url_for("admin_panel"))
             objetivo.identidad_verificada = True
         elif accion == "retirar":
             objetivo.identidad_verificada = False
@@ -2807,10 +2855,13 @@ def admin_editar_usuario(usuario_id):
         return redirect(url_for("admin_panel"))
     if request.method == "POST":
         email_anterior = usuario.email
+        rut_anterior = usuario.rut
+        rut_ingresado = request.form.get("rut", "").strip()
         for field in [
             "nombre",
             "apellido",
             "email",
+            "rut",
             "telefono",
             "comuna",
             "pais",
@@ -2829,8 +2880,18 @@ def admin_editar_usuario(usuario_id):
         ]:
             setattr(usuario, field, request.form.get(field, "").strip())
         usuario.email = usuario.email.lower()
+        usuario.rut = normalizar_rut(usuario.rut)
+        if not rut_chileno_valido(rut_ingresado):
+            flash("Revisa el RUT ingresado.", "error")
+            return redirect(url_for("admin_editar_usuario", usuario_id=usuario.id))
+        rut_duplicado = Usuario.query.filter(Usuario.rut == usuario.rut, Usuario.id != usuario.id).first()
+        if rut_duplicado or Empresa.query.filter_by(rut=usuario.rut).first():
+            flash("Ese RUT ya esta asociado a otra cuenta.", "error")
+            return redirect(url_for("admin_editar_usuario", usuario_id=usuario.id))
         if usuario.email != email_anterior:
             usuario.email_verificado = False
+            usuario.identidad_verificada = False
+        if usuario.rut != rut_anterior:
             usuario.identidad_verificada = False
         password = request.form.get("password", "").strip()
         if password:

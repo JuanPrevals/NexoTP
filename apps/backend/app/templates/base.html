@@ -77,6 +77,13 @@
     </div>
   {% endif %}
 
+  {% if current_user.is_authenticated and not current_user.rut %}
+    <div class="page verification-notice" role="status">
+      <div><strong>RUT pendiente</strong><p class="muted mini">Registralo para postular y enviar mensajes.</p></div>
+      <a class="btn btn-secondary" href="{{ url_for('editar_perfil') }}">Completar RUT</a>
+    </div>
+  {% endif %}
+
   <main>{% block content %}{% endblock %}</main>
 
   {% if current_user.is_authenticated and mostrar_onboarding %}

@@ -16,6 +16,7 @@
       <div class="field"><label>Correo</label><input name="email" type="email" required></div>
       <div class="field"><label>Contrasena</label><input name="password" type="password" minlength="10" autocomplete="new-password" required></div>
     </div>
+    <div class="field"><label>RUT</label><input name="rut" inputmode="text" autocomplete="off" data-rut-input required></div>
     <div class="grid-2">
       <div class="field"><label>Especialidad</label><select name="especialidad" required><option value="">Selecciona</option>{% for i in especialidades %}<option>{{ i }}</option>{% endfor %}</select></div>
       <div class="field"><label>Comuna</label><select name="comuna" required><option value="">Selecciona</option>{% for i in comunas %}<option>{{ i }}</option>{% endfor %}</select></div>
