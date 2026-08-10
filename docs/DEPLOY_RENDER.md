@@ -1,146 +1,55 @@
-# Deploy en Render
+# Despliegue seguro
 
-Guia para publicar NexoTP como servicio web Flask en Render.
+La arquitectura contiene dos servicios:
 
-## 1. Preparar GitHub
+- Backend ASGI: `apps.backend.app.main:app`.
+- Frontend estatico: resultado de `npm run build` en `apps/frontend/dist`.
 
-El repositorio remoto actual apunta a:
+## Backend
 
-```text
-https://github.com/JuanPrevals/NexoTP.git
-```
+Configura el directorio raiz del servicio en la raiz del repositorio.
 
-Flujo normal:
+- Build: `pip install -r apps/backend/requirements.txt`
+- Start: `uvicorn apps.backend.app.main:app --host 0.0.0.0 --port $PORT --proxy-headers`
+- Health check: `/api/health`
 
-```bash
-git status
-git add .
-git commit -m "Describe el cambio"
-git push origin main
-```
-
-## 2. Crear Web Service
-
-1. Entrar a Render.
-2. New > Web Service.
-3. Conectar el repositorio de GitHub.
-4. Runtime: Python.
-5. Branch: `main`.
-6. Build Command:
-
-```bash
-pip install -r requirements.txt
-```
-
-7. Start Command:
-
-```bash
-gunicorn app:app
-```
-
-El `Procfile` ya contiene:
+Variables obligatorias:
 
 ```text
-web: gunicorn app:app
+APP_ENV=production
+DATABASE_URL=postgresql+psycopg://...
+SECRET_KEY=<valor aleatorio de 32 o mas caracteres>
+ADMIN_PASSWORD_HASH=<hash generado por Werkzeug>
+ALLOWED_ORIGINS=https://tu-dominio.example
 ```
 
-## 3. Variables de entorno
+No uses SQLite en un filesystem efimero. Crea una base PostgreSQL administrada,
+habilita respaldos y usa una cuenta con privilegios limitados.
 
-Configura al menos:
+## Frontend
 
-| Variable | Recomendacion |
-|---|---|
-| `SECRET_KEY` | Valor largo y privado. |
-| `ADMIN_PASSWORD` | Password seguro para `/admin-nexotp`. |
-| `FLASK_DEBUG` | `0` en produccion. |
+- Root: `apps/frontend`
+- Build: `npm ci && npm run build`
+- Publish directory: `dist`
 
-Opcionales para correos reales:
+El proxy debe dirigir `/backend-page/*` y `/api/*` al backend. Si el proveedor
+no permite reescrituras, usa los contenedores de `deployment/`, cuyo Nginx ya
+incluye esa configuracion.
 
-| Variable | Uso |
-|---|---|
-| `SMTP_HOST` | Host SMTP. |
-| `SMTP_PORT` | Puerto, normalmente `587`. |
-| `SMTP_USER` | Usuario SMTP. |
-| `SMTP_PASSWORD` | Password SMTP. |
-| `MAIL_FROM` | Remitente visible. |
+## Dominio y HTTPS
 
-Si SMTP no esta configurado, las notificaciones siguen disponibles dentro de la app y en tiempo real.
+Expone un solo dominio publico, fuerza HTTPS y no publiques directamente el
+puerto de Uvicorn. Revisa las cabeceras, cookies seguras y CORS después de
+conectar el dominio definitivo.
 
-## 4. Base de datos
+## Antes de publicar
 
-La app usa SQLite por defecto:
-
-```python
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///nexotp.db"
+```powershell
+python -m pytest -q
+Set-Location apps/frontend
+npm ci
+npm run lint
+npm run build
 ```
 
-Esto sirve para demo y desarrollo local, pero no es ideal para produccion. Render puede reiniciar instancias y el filesystem no debe tratarse como base persistente confiable.
-
-Para produccion se recomienda mover a Postgres administrado, por ejemplo Render Postgres, Neon o Supabase.
-
-Patron sugerido para adaptar `app.py`:
-
-```python
-db_url = os.environ.get("DATABASE_URL", "sqlite:///nexotp.db")
-app.config["SQLALCHEMY_DATABASE_URI"] = db_url
-```
-
-Luego configurar `DATABASE_URL` en Render.
-
-## 5. Realtime y Gunicorn
-
-NexoTP usa Server-Sent Events para notificaciones, mensajes y estado de escritura.
-
-Para demo simple, `gunicorn app:app` funciona. Si hay muchos usuarios concurrentes, conviene evaluar workers/threads:
-
-```bash
-gunicorn --workers 2 --threads 4 app:app
-```
-
-Evita usar configuraciones que corten conexiones largas demasiado pronto, porque SSE mantiene una conexion abierta por usuario.
-
-## 6. Validacion post deploy
-
-Probar estas rutas:
-
-- `/`
-- `/login`
-- `/feed`
-- `/mensajes`
-- `/notificaciones`
-- `/empresa/login`
-- `/empresa/panel`
-- `/institucion/login`
-- `/institucion/panel`
-- `/admin-nexotp`
-
-Credenciales demo:
-
-| Rol | Email | Password |
-|---|---|---|
-| Egresado | `demo@nexotp.cl` | `demo123` |
-| Empresa | `empresa@nexotp.cl` | `empresa123` |
-| Liceo | `liceo@nexotp.cl` | `liceo123` |
-| Admin | - | Valor de `ADMIN_PASSWORD` |
-
-## 7. Checklist funcional
-
-- Crear perfil nuevo y confirmar que aparece la guia inicial.
-- Postular a una oferta.
-- Entrar como empresa y resolver la postulacion.
-- Verificar que una postulacion ya resuelta no se pueda aceptar de nuevo.
-- Probar mensajes en una postulacion no rechazada.
-- Probar que una postulacion rechazada deja el chat como historial.
-- Abrir campana de notificaciones y marcar como leido.
-- Generar CV PDF desde `/perfil`.
-- Revisar mapa de oportunidades.
-- Exportar reporte CSV institucional.
-
-## 8. Notas de produccion
-
-- Cambiar `SECRET_KEY` y `ADMIN_PASSWORD`.
-- Usar HTTPS.
-- Usar Postgres para persistencia.
-- Configurar backups.
-- Revisar politicas de privacidad si se usara con datos reales.
-- No usar credenciales demo en produccion.
+Consulta tambien `SECURITY.md`.

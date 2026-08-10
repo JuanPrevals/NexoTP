@@ -36,19 +36,27 @@ from sqlalchemy import inspect, or_, text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from .core.config import settings
+from .core.security import configure_security_headers
+
 
 APP_NAME = "NexoTP"
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
+ADMIN_PASSWORD_HASH = settings.admin_password_hash
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "nexotp-dev")
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///nexotp.db"
+app.config["SECRET_KEY"] = settings.secret_key
+app.config["SQLALCHEMY_DATABASE_URI"] = settings.database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SESSION_COOKIE_SECURE"] = settings.secure_cookies
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 app.config["SMTP_HOST"] = os.environ.get("SMTP_HOST", "")
 app.config["SMTP_PORT"] = int(os.environ.get("SMTP_PORT", "587"))
 app.config["SMTP_USER"] = os.environ.get("SMTP_USER", "")
 app.config["SMTP_PASSWORD"] = os.environ.get("SMTP_PASSWORD", "")
 app.config["MAIL_FROM"] = os.environ.get("MAIL_FROM", "noreply@nexotp.local")
+configure_security_headers(app, settings.environment == "production")
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -2137,7 +2145,13 @@ def faq():
 @app.route("/admin-nexotp", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
-        if request.form.get("password", "") == ADMIN_PASSWORD:
+        password = request.form.get("password", "")
+        admin_is_valid = (
+            check_password_hash(ADMIN_PASSWORD_HASH, password)
+            if ADMIN_PASSWORD_HASH
+            else password == "admin123-local-only"
+        )
+        if admin_is_valid:
             logout_user()
             session.pop("empresa_id", None)
             session.pop("institucion_id", None)

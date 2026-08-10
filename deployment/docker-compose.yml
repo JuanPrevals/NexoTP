@@ -1,0 +1,43 @@
+services:
+  database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nexotp
+      POSTGRES_USER: nexotp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexotp -d nexotp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.backend
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      SECRET_KEY: ${SECRET_KEY:?Define SECRET_KEY}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:?Define ADMIN_PASSWORD_HASH}
+      DATABASE_URL: postgresql+psycopg://nexotp:${POSTGRES_PASSWORD}@database:5432/nexotp
+      ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:?Define PUBLIC_ORIGIN}
+    depends_on:
+      database:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.frontend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
