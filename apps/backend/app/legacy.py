@@ -45,6 +45,8 @@ from .services.sii import SIIInvalidRUT, SIINotFound, SIIUnavailable, lookup_com
 
 APP_NAME = "NexoTP"
 ADMIN_PASSWORD_HASH = settings.admin_password_hash
+ADMIN_BASE_PATH = f"/{settings.admin_path}"
+ADMIN_SESSION_TTL = timedelta(minutes=30)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = settings.secret_key
@@ -60,6 +62,15 @@ app.config["SMTP_USER"] = os.environ.get("SMTP_USER", "")
 app.config["SMTP_PASSWORD"] = os.environ.get("SMTP_PASSWORD", "")
 app.config["MAIL_FROM"] = os.environ.get("MAIL_FROM", "noreply@nexotp.cl")
 configure_security_headers(app, settings.environment == "production")
+
+
+@app.after_request
+def protect_admin_responses(response):
+    if request.path == ADMIN_BASE_PATH or request.path.startswith(f"{ADMIN_BASE_PATH}/"):
+        response.headers["Cache-Control"] = "no-store, private"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+    return response
 
 
 @app.before_request
@@ -519,9 +530,14 @@ def empresa_required(view):
 def admin_required(view):
     @wraps(view)
     def wrapper(*args, **kwargs):
-        if not session.get("admin_ok"):
+        authenticated_at = session.get("admin_authenticated_at", 0)
+        expired = time.time() - float(authenticated_at or 0) > ADMIN_SESSION_TTL.total_seconds()
+        if not session.get("admin_ok") or expired:
+            session.pop("admin_ok", None)
+            session.pop("admin_authenticated_at", None)
             flash("Acceso admin requerido.", "info")
             return redirect(url_for("admin_login"))
+        session["admin_authenticated_at"] = time.time()
         return view(*args, **kwargs)
     return wrapper
 
@@ -1486,6 +1502,7 @@ def logout():
     session.pop("empresa_id", None)
     session.pop("institucion_id", None)
     session.pop("admin_ok", None)
+    session.pop("admin_authenticated_at", None)
     return redirect(url_for("index"))
 
 
@@ -2535,7 +2552,7 @@ def faq():
     return render_template("faq.html")
 
 
-@app.route("/admin-nexotp", methods=["GET", "POST"])
+@app.route(ADMIN_BASE_PATH, methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
         password = request.form.get("password", "")
@@ -2549,6 +2566,7 @@ def admin_login():
             session.pop("empresa_id", None)
             session.pop("institucion_id", None)
             session["admin_ok"] = True
+            session["admin_authenticated_at"] = time.time()
             return redirect(url_for("admin_panel"))
         flash("Clave admin incorrecta.", "error")
     return render_template("admin_login.html")
@@ -2649,7 +2667,7 @@ def reporte_institucion_csv():
     )
 
 
-@app.route("/admin-nexotp/panel")
+@app.route(f"{ADMIN_BASE_PATH}/panel")
 @admin_required
 def admin_panel():
     return render_template(
@@ -2769,7 +2787,7 @@ def reportar(objetivo_tipo, objetivo_id):
     return redirect(destino)
 
 
-@app.route("/admin-nexotp/verificacion/<objetivo_tipo>/<int:objetivo_id>", methods=["POST"])
+@app.route(f"{ADMIN_BASE_PATH}/verificacion/<objetivo_tipo>/<int:objetivo_id>", methods=["POST"])
 @admin_required
 def admin_verificacion(objetivo_tipo, objetivo_id):
     accion = request.form.get("accion", "").strip()
@@ -2830,7 +2848,7 @@ def admin_verificacion(objetivo_tipo, objetivo_id):
     return redirect(url_for("admin_panel"))
 
 
-@app.route("/admin-nexotp/reporte/<int:reporte_id>", methods=["POST"])
+@app.route(f"{ADMIN_BASE_PATH}/reporte/<int:reporte_id>", methods=["POST"])
 @admin_required
 def admin_resolver_reporte(reporte_id):
     reporte = db.session.get(ReporteSeguridad, reporte_id)
@@ -2846,7 +2864,7 @@ def admin_resolver_reporte(reporte_id):
     return redirect(url_for("admin_panel"))
 
 
-@app.route("/admin-nexotp/usuario/<int:usuario_id>/editar", methods=["GET", "POST"])
+@app.route(f"{ADMIN_BASE_PATH}/usuario/<int:usuario_id>/editar", methods=["GET", "POST"])
 @admin_required
 def admin_editar_usuario(usuario_id):
     usuario = db.session.get(Usuario, usuario_id)
@@ -2906,7 +2924,7 @@ def admin_editar_usuario(usuario_id):
     return render_template("admin_edit_usuario.html", usuario=usuario)
 
 
-@app.route("/admin-nexotp/empresa/<int:empresa_id>/editar", methods=["GET", "POST"])
+@app.route(f"{ADMIN_BASE_PATH}/empresa/<int:empresa_id>/editar", methods=["GET", "POST"])
 @admin_required
 def admin_editar_empresa(empresa_id):
     empresa = db.session.get(Empresa, empresa_id)
@@ -2935,7 +2953,7 @@ def admin_editar_empresa(empresa_id):
     return render_template("admin_edit_empresa.html", empresa=empresa)
 
 
-@app.route("/admin-nexotp/oferta/<int:oferta_id>/editar", methods=["GET", "POST"])
+@app.route(f"{ADMIN_BASE_PATH}/oferta/<int:oferta_id>/editar", methods=["GET", "POST"])
 @admin_required
 def admin_editar_oferta(oferta_id):
     oferta = db.session.get(Oferta, oferta_id)
@@ -2981,7 +2999,7 @@ def admin_editar_oferta(oferta_id):
     return render_template("admin_edit_oferta.html", oferta=oferta)
 
 
-@app.route("/admin-nexotp/postulacion/<int:postulacion_id>/editar", methods=["GET", "POST"])
+@app.route(f"{ADMIN_BASE_PATH}/postulacion/<int:postulacion_id>/editar", methods=["GET", "POST"])
 @admin_required
 def admin_editar_postulacion(postulacion_id):
     postulacion = db.session.get(Postulacion, postulacion_id)
@@ -3008,7 +3026,7 @@ def admin_editar_postulacion(postulacion_id):
     return render_template("admin_edit_postulacion.html", postulacion=postulacion)
 
 
-@app.route("/admin-nexotp/eliminar/<tipo>/<int:item_id>", methods=["POST"])
+@app.route(f"{ADMIN_BASE_PATH}/eliminar/<tipo>/<int:item_id>", methods=["POST"])
 @admin_required
 def admin_eliminar(tipo, item_id):
     modelos = {

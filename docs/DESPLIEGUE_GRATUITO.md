@@ -207,8 +207,20 @@ APP_ENV=production
 DATABASE_URL=postgresql+psycopg://...
 SECRET_KEY=<clave generada>
 ADMIN_PASSWORD_HASH=<hash generado>
+ADMIN_PATH=<ruta-administrativa-privada>
 ALLOWED_ORIGINS=https://URL-DEL-FRONTEND
 ```
+
+`ADMIN_PATH` define el prefijo privado del panel administrativo. Debe contener
+entre 8 y 80 letras, numeros, guiones o guiones bajos, sin `/`. Por ejemplo,
+con `ADMIN_PATH=control-nexo-8f4d2a91`, el ingreso queda disponible en
+`https://URL-DEL-BACKEND/control-nexo-8f4d2a91` y el panel en
+`https://URL-DEL-BACKEND/control-nexo-8f4d2a91/panel`. Al cambiar este valor y
+reiniciar el servicio, la ruta anterior deja de existir y responde 404.
+
+Guarda la ruta en un administrador de contrasenas y no la publiques en enlaces,
+capturas o documentacion publica. La ruta privada es una capa adicional: la
+contraseña administrativa sigue siendo obligatoria.
 
 Como todavia no conocemos la URL del frontend, puedes usar temporalmente:
 

@@ -20,8 +20,14 @@ APP_ENV=production
 DATABASE_URL=postgresql+psycopg://...
 SECRET_KEY=<valor aleatorio de 32 o mas caracteres>
 ADMIN_PASSWORD_HASH=<hash generado por Werkzeug>
+ADMIN_PATH=<ruta-administrativa-privada-sin-barras>
 ALLOWED_ORIGINS=https://tu-dominio.example
 ```
+
+Si `ADMIN_PATH=control-nexo-8f4d2a91`, el formulario de acceso queda en
+`/control-nexo-8f4d2a91` y el panel en `/control-nexo-8f4d2a91/panel`. El valor
+admite entre 8 y 80 letras, numeros, guiones o guiones bajos. Cambiarlo requiere
+reiniciar el servicio y hace que la ruta anterior responda 404.
 
 No uses SQLite en un filesystem efimero. Crea una base PostgreSQL administrada,
 habilita respaldos y usa una cuenta con privilegios limitados.

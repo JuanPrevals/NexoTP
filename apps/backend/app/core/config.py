@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 import os
+import re
 import secrets
 
 
@@ -26,6 +27,7 @@ class Settings:
     secure_cookies: bool
     seed_demo_data: bool
     public_origin: str
+    admin_path: str
 
 
 def load_settings() -> Settings:
@@ -47,6 +49,12 @@ def load_settings() -> Settings:
     if production and not public_origin.startswith("https://"):
         raise RuntimeError("Produccion requiere PUBLIC_ORIGIN con HTTPS.")
 
+    admin_path = os.environ.get("ADMIN_PATH", "admin-nexotp").strip().strip("/")
+    if not re.fullmatch(r"[a-zA-Z0-9_-]{8,80}", admin_path):
+        raise RuntimeError(
+            "ADMIN_PATH debe tener entre 8 y 80 caracteres y usar solo letras, numeros, guion o guion bajo."
+        )
+
     return Settings(
         environment=environment,
         secret_key=secret_key or secrets.token_urlsafe(48),
@@ -56,6 +64,7 @@ def load_settings() -> Settings:
         secure_cookies=production,
         seed_demo_data=os.environ.get("SEED_DEMO_DATA", "0") == "1",
         public_origin=public_origin,
+        admin_path=admin_path,
     )
 
 

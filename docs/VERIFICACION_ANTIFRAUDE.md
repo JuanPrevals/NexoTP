@@ -36,7 +36,12 @@ Las consultas se hacen desde el backend, admiten solo RUT de personas juridicas,
 
 ## Operacion administrativa
 
-En `/admin-nexotp/panel` se puede:
+El acceso usa el prefijo privado definido en `ADMIN_PATH`. Por ejemplo, si
+`ADMIN_PATH=gestion-interna-ejemplo`, el panel queda en
+`/gestion-interna-ejemplo/panel`. No publiques este valor en capturas ni
+documentacion publica.
+
+En el panel se puede:
 
 - verificar o retirar el sello de identidad de un usuario;
 - aprobar, rechazar, suspender o reactivar empresas;
