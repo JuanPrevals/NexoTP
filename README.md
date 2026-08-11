@@ -17,7 +17,6 @@ apps/
       templates/
       legacy.py             reglas de negocio existentes
       main.py               entrada ASGI
-    instance/               datos locales ignorados por Git
 deployment/                 Docker, Nginx y Compose
 docs/
 ```
@@ -26,30 +25,6 @@ FastAPI es el punto de entrada del backend. Durante la migracion incremental,
 las reglas de negocio existentes se ejecutan mediante un adaptador WSGI. El
 frontend React consume esas rutas por HTTP. La siguiente etapa recomendada es
 extraer cada dominio de `legacy.py` a endpoints JSON versionados.
-
-## Desarrollo local
-
-Instala el backend:
-
-```powershell
-python -m pip install -r apps/backend/requirements.txt
-python -m uvicorn apps.backend.app.main:app --reload --port 8000
-```
-
-En otra terminal instala e inicia el frontend:
-
-```powershell
-Set-Location apps/frontend
-npm install
-npm run dev
-```
-
-- Aplicacion: `http://localhost:5173`
-- API: `http://localhost:8000`
-- Salud: `http://localhost:8000/api/health`
-
-La base local se conserva en `apps/backend/instance/nexotp.db` y no se publica
-en Git.
 
 ## Variables de entorno
 
@@ -67,8 +42,8 @@ En produccion son obligatorias:
 El servidor se niega a iniciar en produccion si faltan los secretos
 principales.
 
-Genera el hash administrativo localmente y guarda solamente el resultado en el
-administrador de secretos del hosting:
+Genera el hash administrativo y guarda solamente el resultado en el
+administrador de secretos del proveedor:
 
 ```powershell
 python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash(input('Password: ')))"
@@ -87,7 +62,7 @@ Set-Location ../..
 python -m pytest
 ```
 
-## Produccion con contenedores
+## Despliegue
 
 ```powershell
 Copy-Item deployment/.env.example deployment/.env
@@ -95,8 +70,8 @@ Copy-Item deployment/.env.example deployment/.env
 docker compose --env-file deployment/.env -f deployment/docker-compose.yml up --build
 ```
 
-El contenedor publico escucha en el puerto `8080`. En un hosting real debe
-colocarse detras del HTTPS administrado por el proveedor o de un proxy TLS.
+El servicio publico escucha en el puerto `8080` y debe publicarse detras del
+HTTPS administrado por el proveedor o de un proxy TLS.
 
 Consulta [SECURITY.md](SECURITY.md) antes de publicar y
 [docs/DEPLOY_RENDER.md](docs/DEPLOY_RENDER.md) para las consideraciones del

@@ -1,8 +1,7 @@
 # Publicar NexoTP gratis, paso a paso
 
-Esta guia explica como sacar NexoTP del computador y dejarlo visible en
-Internet usando planes gratuitos. Esta pensada para una demostracion, proyecto
-academico o primeras pruebas con usuarios.
+Esta guia explica como publicar NexoTP en Internet usando servicios con planes
+gratuitos y una arquitectura persistente basada en PostgreSQL.
 
 > Los planes gratuitos pueden cambiar. Render suspende los servicios inactivos
 > y el primer acceso puede tardar. No se debe prometer disponibilidad comercial
@@ -77,7 +76,7 @@ cadenas DATABASE_URL
 Si un secreto fue publicado alguna vez, borrarlo del archivo no es suficiente:
 hay que revocarlo o cambiarlo.
 
-## 3. Verificar el proyecto localmente
+## 3. Verificar la version que se publicara
 
 Instala y prueba el backend:
 
@@ -156,20 +155,13 @@ el resto.
 Guarda esta cadena temporalmente en un administrador de contrasenas. No la
 escribas en un archivo del repositorio.
 
-### Base nueva o datos locales
+### Preparar la base de produccion
 
-Para la primera demostracion se recomienda comenzar con la base Neon vacia.
+Para el primer despliegue se recomienda comenzar con la base Neon vacia.
 NexoTP crea su esquema y datos iniciales al arrancar.
 
-La base local está en:
-
-```text
-apps/backend/instance/nexotp.db
-```
-
-No la subas a Render. Si necesitas conservar usuarios o postulaciones reales,
-hay que realizar una migracion controlada de SQLite a PostgreSQL antes de abrir
-el sitio al publico.
+Si necesitas conservar usuarios o postulaciones existentes, realiza una
+migracion controlada a PostgreSQL antes de abrir el sitio al publico.
 
 ## 6. Generar secretos de produccion
 
@@ -412,7 +404,7 @@ Comprueba:
 `ALLOWED_ORIGINS` debe coincidir exactamente con el frontend, incluyendo
 `https://` y sin una barra final.
 
-### Funciona localmente pero no en Render
+### El despliegue no responde correctamente
 
 Busca referencias a:
 
@@ -455,4 +447,3 @@ Cuando el sitio inicial esté estable:
 - Neon: <https://neon.com/docs/introduction>
 - Neon Free: <https://neon.com/pricing>
 - Cloudflare Pages como alternativa futura: <https://developers.cloudflare.com/pages/>
-

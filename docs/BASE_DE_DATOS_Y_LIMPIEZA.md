@@ -51,7 +51,7 @@ La herramienta elimina solo las identidades demo conocidas y sus registros relac
 
 ## Usar datos demo solo en desarrollo
 
-Si alguna vez necesitas volver a cargar ejemplos en una base local desechable, define:
+Si alguna vez necesitas volver a cargar ejemplos en un entorno desechable, define:
 
 ```env
 SEED_DEMO_DATA=1

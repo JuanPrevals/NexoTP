@@ -58,7 +58,7 @@ app.config["SMTP_HOST"] = os.environ.get("SMTP_HOST", "")
 app.config["SMTP_PORT"] = int(os.environ.get("SMTP_PORT", "587"))
 app.config["SMTP_USER"] = os.environ.get("SMTP_USER", "")
 app.config["SMTP_PASSWORD"] = os.environ.get("SMTP_PASSWORD", "")
-app.config["MAIL_FROM"] = os.environ.get("MAIL_FROM", "noreply@nexotp.local")
+app.config["MAIL_FROM"] = os.environ.get("MAIL_FROM", "noreply@nexotp.cl")
 configure_security_headers(app, settings.environment == "production")
 
 
@@ -2542,7 +2542,7 @@ def admin_login():
         admin_is_valid = (
             check_password_hash(ADMIN_PASSWORD_HASH, password)
             if ADMIN_PASSWORD_HASH
-            else password == "admin123-local-only"
+            else False
         )
         if admin_is_valid:
             logout_user()
