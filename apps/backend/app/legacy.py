@@ -35,7 +35,7 @@ from flask_login import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect, or_, text
-from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from .core.config import settings
@@ -3052,8 +3052,44 @@ def admin_eliminar(tipo, item_id):
     if not item:
         flash("Registro no encontrado.", "error")
         return redirect(url_for("admin_panel"))
-    db.session.delete(item)
-    db.session.commit()
+
+    try:
+        if tipo == "usuario":
+            # Estas relaciones no tienen una cascada de base de datos completa.
+            # Se eliminan antes del usuario para no intentar convertir claves
+            # foraneas obligatorias en NULL.
+            Conexion.query.filter(
+                or_(Conexion.usuario_id == item.id, Conexion.colega_id == item.id)
+            ).delete(synchronize_session=False)
+            Notificacion.query.filter_by(usuario_id=item.id).delete(synchronize_session=False)
+            ResenaEmpresa.query.filter_by(usuario_id=item.id).delete(synchronize_session=False)
+            Novedad.query.filter_by(usuario_id=item.id).delete(synchronize_session=False)
+            Mensaje.query.filter(
+                or_(
+                    (Mensaje.remitente_tipo == "usuario") & (Mensaje.remitente_id == item.id),
+                    (Mensaje.destinatario_tipo == "usuario") & (Mensaje.destinatario_id == item.id),
+                )
+            ).delete(synchronize_session=False)
+            TokenVerificacion.query.filter_by(
+                actor_tipo="usuario", actor_id=item.id
+            ).delete(synchronize_session=False)
+            ReporteSeguridad.query.filter(
+                or_(
+                    (ReporteSeguridad.reportante_tipo == "usuario")
+                    & (ReporteSeguridad.reportante_id == item.id),
+                    (ReporteSeguridad.objetivo_tipo == "usuario")
+                    & (ReporteSeguridad.objetivo_id == item.id),
+                )
+            ).delete(synchronize_session=False)
+
+        db.session.delete(item)
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        app.logger.exception("No se pudo eliminar el registro administrativo.")
+        flash("No se pudo eliminar el registro porque aun tiene datos asociados.", "error")
+        return redirect(url_for("admin_panel"))
+
     flash("Registro eliminado.", "success")
     return redirect(url_for("admin_panel"))
 
