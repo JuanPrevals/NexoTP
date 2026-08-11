@@ -3,17 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f5">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>{% block title %}{{ app_name }}{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body {% if mostrar_onboarding %}data-onboarding-new-user="1"{% endif %}>
+  <a class="skip-link" href="#contenido-principal">Saltar al contenido</a>
   <header class="topbar">
     <a class="brand" href="{{ url_for('index') }}"><span>N</span>{{ app_name }}</a>
-    <nav class="nav-links">
+    <nav class="nav-links" id="site-navigation" aria-label="Navegacion principal">
       {% if current_user.is_authenticated %}
         <a href="{{ url_for('dashboard') }}">Dashboard</a>
         <a href="{{ url_for('feed') }}">Feed</a>
@@ -40,7 +42,13 @@
       {% endif %}
     </nav>
     <div class="topbar-actions">
-      <button class="icon-btn" type="button" data-theme-toggle title="Cambiar tema">◐</button>
+      <button class="icon-btn nav-toggle" type="button" data-nav-toggle aria-controls="site-navigation" aria-expanded="false">
+        <span class="nav-toggle-lines" aria-hidden="true"></span>
+        <span class="visually-hidden">Abrir menu</span>
+      </button>
+      <button class="icon-btn theme-toggle" type="button" data-theme-toggle title="Cambiar tema" aria-label="Cambiar tema">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36-6.36-1.42 1.42M7.06 16.94l-1.42 1.42m12.72 0-1.42-1.42M7.06 7.06 5.64 5.64"/><circle cx="12" cy="12" r="4"/></svg>
+      </button>
       {% if current_user.is_authenticated %}
         <a class="icon-btn notification-link" href="{{ url_for('notificaciones') }}" title="Notificaciones" aria-label="Notificaciones">
           <span class="bell-icon" aria-hidden="true">&#128276;</span>
@@ -84,7 +92,7 @@
     </div>
   {% endif %}
 
-  <main>{% block content %}{% endblock %}</main>
+  <main id="contenido-principal">{% block content %}{% endblock %}</main>
 
   {% if current_user.is_authenticated and mostrar_onboarding %}
     <div class="onboarding-overlay" data-onboarding-overlay hidden></div>

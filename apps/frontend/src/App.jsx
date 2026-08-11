@@ -51,6 +51,16 @@ export default function App() {
 
   useEffect(() => {
     const handleClick = async (event) => {
+      const navButton = event.target.closest('[data-nav-toggle]')
+      if (navButton) {
+        const navigation = containerRef.current?.querySelector('#site-navigation')
+        const isOpen = navButton.getAttribute('aria-expanded') === 'true'
+        navButton.setAttribute('aria-expanded', String(!isOpen))
+        navButton.querySelector('.visually-hidden').textContent = isOpen ? 'Abrir menu' : 'Cerrar menu'
+        navigation?.classList.toggle('is-open', !isOpen)
+        return
+      }
+
       const themeButton = event.target.closest('[data-theme-toggle]')
       if (themeButton) {
         const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'
@@ -90,6 +100,10 @@ export default function App() {
       const url = new URL(link.href, window.location.origin)
       if (url.origin !== window.location.origin || url.pathname.endsWith('.pdf') || url.pathname.endsWith('.csv')) return
       event.preventDefault()
+      const navigation = containerRef.current?.querySelector('#site-navigation')
+      const closeNavButton = containerRef.current?.querySelector('[data-nav-toggle]')
+      navigation?.classList.remove('is-open')
+      closeNavButton?.setAttribute('aria-expanded', 'false')
       navigate(`${url.pathname}${url.search}`)
     }
 
@@ -144,9 +158,10 @@ export default function App() {
 
   return (
     <div ref={containerRef} {...page.bodyAttributes}>
+      <a className="skip-link" href="#contenido-principal">Saltar al contenido</a>
       <div dangerouslySetInnerHTML={{ __html: page.topbar }} />
       <div dangerouslySetInnerHTML={{ __html: page.flashes }} />
-      <main dangerouslySetInnerHTML={{ __html: page.main }} />
+      <main id="contenido-principal" dangerouslySetInnerHTML={{ __html: page.main }} />
     </div>
   )
 }

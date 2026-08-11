@@ -2,18 +2,19 @@
 {% block title %}{{ app_name }} · empleo TP{% endblock %}
 {% block content %}
 <div class="page">
-  <section class="hero">
-    <div>
+  <section class="hero home-hero">
+    <div class="hero-copy">
       <p class="eyebrow">Red laboral TP</p>
       <h1>Primer empleo tecnico, sin ruido.</h1>
       <p class="lead">{{ app_name }} conecta egresados TP con empresas que publican oportunidades reales y quedan guardadas en la plataforma.</p>
-      <div class="row" style="margin-top:1.4rem;">
+      <div class="row hero-actions">
         <a class="btn btn-primary" href="{{ url_for('registro') }}">Soy egresado</a>
         <a class="btn btn-secondary" href="{{ url_for('empresa_login') }}">Soy empresa</a>
         <a class="btn" href="{{ url_for('faq') }}">FAQ</a>
       </div>
     </div>
-    <div class="card stack">
+    <div class="card stack hero-opportunities">
+      <div class="technical-route" aria-hidden="true"><span></span><span></span><span></span></div>
       <div class="grid-3">
         <div class="stat"><strong>{{ stats.ofertas }}</strong><span class="muted">ofertas</span></div>
         <div class="stat"><strong>{{ stats.empresas }}</strong><span class="muted">empresas</span></div>

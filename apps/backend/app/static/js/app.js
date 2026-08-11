@@ -117,6 +117,16 @@ document.addEventListener("submit", async (event) => {
 });
 
 document.addEventListener("click", async (event) => {
+  const navButton = event.target.closest("[data-nav-toggle]");
+  if (navButton) {
+    const navigation = document.querySelector("#site-navigation");
+    const isOpen = navButton.getAttribute("aria-expanded") === "true";
+    navButton.setAttribute("aria-expanded", String(!isOpen));
+    navButton.querySelector(".visually-hidden").textContent = isOpen ? "Abrir menu" : "Cerrar menu";
+    navigation?.classList.toggle("is-open", !isOpen);
+    return;
+  }
+
   const themeButton = event.target.closest("[data-theme-toggle]");
   if (themeButton) {
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
