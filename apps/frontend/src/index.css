@@ -8,3 +8,9 @@
 }
 
 .react-loading .spinner-border { color: #0f766e; }
+
+html, body, #root { min-height: 100%; }
+
+@supports (padding: env(safe-area-inset-top)) {
+  #root { min-height: 100dvh; }
+}

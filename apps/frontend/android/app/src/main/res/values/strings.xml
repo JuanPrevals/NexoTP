@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NexoTP</string>
+    <string name="title_activity_main">NexoTP</string>
+    <string name="package_name">cl.nexotp.app</string>
+    <string name="custom_url_scheme">cl.nexotp.app</string>
+</resources>
